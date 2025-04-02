@@ -7,7 +7,7 @@ Este repositorio trata de organizar toda la información necesaria para el proye
 #### Objetivos
 Conseguir la comunicación de datos gps usando la tecnología de LoRa con un dispositivo Arduino.
 #### Dispositivo
-El dispositivo se trata de una placa Arduino a la que se la añadirá la correspondiente antena para poder hacer la comunicación con la antena del ICM, un GPS para recoger los datos y una batería. Todo esto encapsulado en una carcasa.
+El dispositivo se trata de una placa Arduino la cual ya cuenta con un módulo LoRa integrado compatible con LoRaWan a la que se la añadirá la correspondiente antena para poder hacer la comunicación con la antena del ICM, un GPS para recoger los datos y una batería. Todo esto encapsulado en una carcasa.
 #### LoRa
 LoRa (Long Range) es una tecnología gratuita que permite transimtir datos a larga distancia con muy poco gasto energético.
 Esta es tecnología directa, trabaja punto a punto.
@@ -28,5 +28,5 @@ TTN (The Things Network) es una red pública basada en LoRaWan, es un servidor q
 - Proto shield básico: [MKR SD Proto Shield](https://store.arduino.cc/en-es/products/mkr-sd-proto-shield?variant=35572111081623)
 - Shield con sensores: [Arduino MKR ENV Shield rev2](https://store.arduino.cc/en-es/products/arduino-mkr-env-shield-rev2?variant=40027689779351)
 
-#### Información
+###### Información
 [LoRa y LoRaWan](https://www.vencoel.com/que-es-lora-como-funciona-y-caracteristicas-principales/#:~:text=creada%20por%20Helium-,Conclusi%C3%B3n,ciudad%2C%20su%20comportamiento%20es%20excepcional.)
