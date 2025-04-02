@@ -1,3 +1,4 @@
+![](https://i.imgur.com/vaOZJTO.png)
 ## Envio de datos GPS por LoRa
 
 Este repositorio trata de organizar toda la información necesaria para el proyecto así como de crear un acceso rápido a toda la documentación.
@@ -18,7 +19,7 @@ LoRaWan (Long Range Wide Area Network) es un protocolo de red que se usa encima 
 
 Mientras LoRa solo permite comunicación directa (punto a punto), LoRaWAN permite crear una red de largo alcance donde los dispositivos no tienen que estar conectados directamente unos con otros.
 #### TTN
-
+TTN (The Things Network) es una red pública basada en LoRaWan, es un servidor que permite conectar el dispositivo LoRaWan (arduino con datos GPS) a internet. Desde TTN se pueden redirigir estos datos a plataformas web como Grafana que permite visualizar los datos recogidos en tiempo real.
 ### Documentación
 #### Material
 - Placa: [Arduino MKR WAN 1310](https://store.arduino.cc/en-es/products/arduino-mkr-wan-1310?variant=35571180830871)
