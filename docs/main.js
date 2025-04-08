@@ -1,7 +1,24 @@
-async function cargarCSV(url) {
-  const res = await fetch(url);
-  const texto = await res.text();
-  const lineas = texto.trim().split('\n').slice(1); // Quitamos cabecera
+let mapa;
+let ruta;
+let marcadores = [];
+
+function inicializarMapa(lat, lon) {
+  mapa = L.map('map').setView([lat, lon], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(mapa);
+}
+
+function limpiarMapa() {
+  if (ruta) {
+    mapa.removeLayer(ruta);
+  }
+  marcadores.forEach(m => mapa.removeLayer(m));
+  marcadores = [];
+}
+
+function procesarCSV(texto) {
+  const lineas = texto.trim().split('\n').slice(1);
   const puntos = [];
 
   for (const linea of lineas) {
@@ -13,32 +30,35 @@ async function cargarCSV(url) {
     });
   }
 
-  return puntos;
-}
+  if (!mapa) {
+    inicializarMapa(puntos[0].lat, puntos[0].lon);
+  }
 
-async function dibujarMapa() {
-  const puntos = await cargarCSV('datos.csv');
+  limpiarMapa();
 
-  const mapa = L.map('map').setView([puntos[0].lat, puntos[0].lon], 15);
-
-  // Capa base (tipo Google Maps)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(mapa);
-
-  // Dibujar puntos + línea
   const coordenadas = puntos.map(p => [p.lat, p.lon]);
-  L.polyline(coordenadas, { color: 'blue' }).addTo(mapa);
 
-  // Añadir marcadores
+  ruta = L.polyline(coordenadas, { color: 'blue' }).addTo(mapa);
+
   puntos.forEach(p => {
-    L.circleMarker([p.lat, p.lon], {
+    const marcador = L.circleMarker([p.lat, p.lon], {
       radius: 5,
       color: 'red'
-    })
-    .bindPopup(`ID: ${p.id}<br>Lat: ${p.lat}<br>Lon: ${p.lon}`)
-    .addTo(mapa);
+    }).bindPopup(`ID: ${p.id}<br>Lat: ${p.lat}<br>Lon: ${p.lon}`);
+    marcador.addTo(mapa);
+    marcadores.push(marcador);
   });
+
+  mapa.fitBounds(ruta.getBounds());
 }
 
-dibujarMapa();
+document.getElementById('csvInput').addEventListener('change', function (e) {
+  const archivo = e.target.files[0];
+  if (!archivo) return;
+
+  const lector = new FileReader();
+  lector.onload = function (event) {
+    procesarCSV(event.target.result);
+  };
+  lector.readAsText(archivo);
+});
