@@ -5,4 +5,4 @@ En esta carpeta se encuentra:
 - Un archivo html que carga lo necesario para usar la libreria Leaflet.js para mostrar el mapa y el propio archivo de Java.
 - Un archivo Java que extrae los datos del CSV, inicializa el mapa y pinta los puntos encima.
 
-Click [aqui](https://sio-icm.github.io/GPS-via-LoRa/) para ver la web.
+Click [aqui](https://viictorperez.github.io/gpslora/) para ver la web.
