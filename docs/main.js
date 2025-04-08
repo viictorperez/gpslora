@@ -1,6 +1,7 @@
 let mapa;
-let ruta;
+let rutas = [];
 let marcadores = [];
+const colores = ['blue', 'green', 'red', 'orange', 'purple', 'brown', 'black'];
 
 function inicializarMapa(lat, lon) {
   mapa = L.map('map').setView([lat, lon], 15);
@@ -10,14 +11,14 @@ function inicializarMapa(lat, lon) {
 }
 
 function limpiarMapa() {
-  if (ruta) {
-    mapa.removeLayer(ruta);
-  }
+  rutas.forEach(r => mapa.removeLayer(r));
+  rutas = [];
+
   marcadores.forEach(m => mapa.removeLayer(m));
   marcadores = [];
 }
 
-function procesarCSV(texto) {
+function procesarCSV(texto, color, nombre) {
   const lineas = texto.trim().split('\n').slice(1);
   const puntos = [];
 
@@ -34,31 +35,38 @@ function procesarCSV(texto) {
     inicializarMapa(puntos[0].lat, puntos[0].lon);
   }
 
-  limpiarMapa();
-
   const coordenadas = puntos.map(p => [p.lat, p.lon]);
 
-  ruta = L.polyline(coordenadas, { color: 'blue' }).addTo(mapa);
+  const ruta = L.polyline(coordenadas, {
+    color: color,
+    weight: 4
+  }).bindPopup(`Track: ${nombre}`);
+
+  ruta.addTo(mapa);
+  rutas.push(ruta);
 
   puntos.forEach(p => {
     const marcador = L.circleMarker([p.lat, p.lon], {
-      radius: 5,
-      color: 'red'
+      radius: 4,
+      color: color
     }).bindPopup(`ID: ${p.id}<br>Lat: ${p.lat}<br>Lon: ${p.lon}`);
     marcador.addTo(mapa);
     marcadores.push(marcador);
   });
 
-  mapa.fitBounds(ruta.getBounds());
+  mapa.fitBounds(L.featureGroup(rutas).getBounds());
 }
 
 document.getElementById('csvInput').addEventListener('change', function (e) {
-  const archivo = e.target.files[0];
-  if (!archivo) return;
+  limpiarMapa(); // Opcional: coméntalo si quieres mantener los anteriores
+  const archivos = Array.from(e.target.files);
 
-  const lector = new FileReader();
-  lector.onload = function (event) {
-    procesarCSV(event.target.result);
-  };
-  lector.readAsText(archivo);
+  archivos.forEach((archivo, i) => {
+    const lector = new FileReader();
+    lector.onload = function (event) {
+      const color = colores[i % colores.length];
+      procesarCSV(event.target.result, color, archivo.name);
+    };
+    lector.readAsText(archivo);
+  });
 });
