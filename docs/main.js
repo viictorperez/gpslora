@@ -4,7 +4,7 @@ let marcadores = [];
 const colores = ['blue', 'green', 'red', 'orange', 'purple', 'brown', 'black'];
 
 // ✅ URL del Google Sheets API (cámbiala por la tuya)
-const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycbxZYsI3_m7VY7NY01Ah_HVTEv6evT9doEBkb9MCWGYiBhFUiy2f8KXDzoqtwG8SEGGKXQ/exec"; // 🚨 Cambia esta URL
+const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycbzF8l5UIJC0ED5y6bWrJs7GLaAYehR0lmroWP-Dc_z4ZI_f2Sz0CAkXFbbrBBMo0izsfQ/exec"; // 🚨 Cambia esta URL
 
 // 🔹 Inicializa el mapa
 function inicializarMapa(lat, lon) {
