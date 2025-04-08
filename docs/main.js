@@ -2,8 +2,11 @@ let mapa;
 let rutas = [];
 let marcadores = [];
 const colores = ['blue', 'green', 'red', 'orange', 'purple', 'brown', 'black'];
-const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycbxZYsI3_m7VY7NY01Ah_HVTEv6evT9doEBkb9MCWGYiBhFUiy2f8KXDzoqtwG8SEGGKXQ/exec"; // 👈 pega tu URL aquí
 
+// ✅ URL del Google Sheets API (cámbiala por la tuya)
+const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycbxZYsI3_m7VY7NY01Ah_HVTEv6evT9doEBkb9MCWGYiBhFUiy2f8KXDzoqtwG8SEGGKXQ/exec"; // 🚨 Cambia esta URL
+
+// 🔹 Inicializa el mapa
 function inicializarMapa(lat, lon) {
   mapa = L.map('map').setView([lat, lon], 15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -11,6 +14,7 @@ function inicializarMapa(lat, lon) {
   }).addTo(mapa);
 }
 
+// 🔹 Limpia el mapa
 function limpiarMapa() {
   rutas.forEach(r => mapa.removeLayer(r));
   rutas = [];
@@ -18,6 +22,7 @@ function limpiarMapa() {
   marcadores = [];
 }
 
+// 🔹 Dibuja el contenido del CSV en el mapa
 function procesarCSV(texto, color, nombre) {
   const lineas = texto.trim().split('\n').slice(1);
   const puntos = lineas.map(linea => {
@@ -46,6 +51,7 @@ function procesarCSV(texto, color, nombre) {
   mapa.fitBounds(L.featureGroup(rutas).getBounds());
 }
 
+// 🔹 Subir CSV a backend → Zenodo
 function subirCSVaZenodo(archivo) {
   const formData = new FormData();
   formData.append("file", archivo);
@@ -69,6 +75,7 @@ function subirCSVaZenodo(archivo) {
   });
 }
 
+// 🔹 Mostrar enlace en lista
 function mostrarEnlaceZenodo(nombre, url, fecha) {
   const lista = document.getElementById('zenodoLinks');
   const li = document.createElement('li');
@@ -76,8 +83,9 @@ function mostrarEnlaceZenodo(nombre, url, fecha) {
   lista.appendChild(li);
 }
 
-function cargarHistorialDesdeGoogle() {
-  fetch(GOOGLE_SHEET_API)
+// 🔹 Cargar historial desde backend
+function cargarHistorialDesdeBackend() {
+  fetch("https://backend-gps-zenodo.onrender.com/historial")
     .then(res => res.json())
     .then(data => {
       const lista = document.getElementById('zenodoLinks');
@@ -85,9 +93,13 @@ function cargarHistorialDesdeGoogle() {
       data.forEach(item => {
         mostrarEnlaceZenodo(item.nombre, item.enlace, item.fecha);
       });
+    })
+    .catch(err => {
+      console.error("❌ No se pudo cargar el historial:", err);
     });
 }
 
+// 🔹 Evento al subir archivos CSV
 document.getElementById('csvInput').addEventListener('change', function (e) {
   const archivos = Array.from(e.target.files);
   if (archivos.length === 0) return;
@@ -108,4 +120,7 @@ document.getElementById('csvInput').addEventListener('change', function (e) {
   e.target.value = '';
 });
 
-cargarHistorialDesdeGoogle();
+// 🔹 Cargar historial al iniciar
+cargarHistorialDesdeBackend();
+
+
