@@ -58,15 +58,20 @@ function procesarCSV(texto, color, nombre) {
 }
 
 document.getElementById('csvInput').addEventListener('change', function (e) {
-  limpiarMapa(); // Opcional: coméntalo si quieres mantener los anteriores
   const archivos = Array.from(e.target.files);
+
+  if (archivos.length === 0) return;
+
+  limpiarMapa(); // 👈 Se limpia SOLO UNA VEZ antes de procesar los nuevos
 
   archivos.forEach((archivo, i) => {
     const lector = new FileReader();
     lector.onload = function (event) {
-      const color = colores[i % colores.length];
+      const color = colores[(rutas.length + i) % colores.length];
       procesarCSV(event.target.result, color, archivo.name);
     };
     lector.readAsText(archivo);
   });
+
+  e.target.value = ''; // 👈 Permite volver a subir el mismo archivo si se quiere
 });
