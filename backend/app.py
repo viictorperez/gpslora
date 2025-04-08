@@ -87,3 +87,13 @@ def guardar_en_sheet(nombre_archivo, url_zenodo):
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000)
+
+@app.route('/historial', methods=['GET'])
+def obtener_historial():
+    try:
+        respuesta = requests.get(GOOGLE_SHEETS_URL)
+        datos = respuesta.json()
+        return jsonify(datos)
+    except Exception as e:
+        return jsonify({"error": "No se pudo obtener el historial", "detalle": str(e)}), 500
+
