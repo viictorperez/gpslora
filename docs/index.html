@@ -2,22 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Mapa GPS + Zenodo</title>
+  <title>Mapa GPS</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #map { height: 400px; margin-top: 20px; }
+    #map { height: 500px; margin-bottom: 1em; }
   </style>
 </head>
 <body>
-  <h1>Visualizador de tracks GPS</h1>
+  <h1>Mapa de Tracks GPS</h1>
 
-  <h2>Sube tus archivos CSV</h2>
-  <input type="file" id="csvInput" accept=".csv" multiple />
+  <input type="file" id="fileInput" accept=".csv" multiple />
+  
+  <!-- Nueva opción -->
+  <div>
+    <label><input type="radio" name="accion" value="ver" checked> Solo visualizar</label>
+    <label><input type="radio" name="accion" value="subir"> Visualizar y subir a Zenodo</label>
+  </div>
 
   <div id="map"></div>
-
-  <h2>Archivos subidos a Zenodo</h2>
-  <ul id="zenodoLinks"></ul>
+  <ul id="historial"></ul>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="main.js"></script>
