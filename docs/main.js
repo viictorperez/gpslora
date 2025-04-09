@@ -84,17 +84,26 @@ function cargarHistorialDesdeGoogle() {
     .then(data => {
       const lista = document.getElementById("historial");
       lista.innerHTML = "";
-      [...data].reverse().forEach(item => {
+
+      if (!Array.isArray(data)) {
+        console.warn("📭 El historial recibido no es un array:", data);
+        return;
+      }
+
+      // Ordenamos por fecha descendente (más nuevo arriba)
+      const ordenado = data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+      ordenado.forEach(item => {
         const li = document.createElement("li");
         li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${item.fecha}`;
         lista.appendChild(li);
       });
-
     })
     .catch(err => {
       console.error("❌ No se pudo cargar el historial:", err);
     });
 }
+
 
 document.getElementById("borrarHistorial").addEventListener("click", () => {
   if (confirm("¿Estás seguro de que quieres borrar todo el historial?")) {
