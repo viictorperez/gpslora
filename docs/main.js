@@ -94,10 +94,21 @@ function cargarHistorialDesdeGoogle() {
       const ordenado = data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
       ordenado.forEach(item => {
-        const li = document.createElement("li");
-        li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${item.fecha}`;
-        lista.appendChild(li);
+        const fecha = new Date(item.fecha);
+        const fechaFormateada = fecha.toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
       });
+
+  const li = document.createElement("li");
+  li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${fechaFormateada}`;
+  lista.appendChild(li);
+});
+
     })
     .catch(err => {
       console.error("❌ No se pudo cargar el historial:", err);
