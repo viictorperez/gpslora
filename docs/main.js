@@ -84,11 +84,12 @@ function cargarHistorialDesdeGoogle() {
     .then(data => {
       const lista = document.getElementById("historial");
       lista.innerHTML = "";
-      data.forEach(item => {
+      [...data].reverse().forEach(item => {
         const li = document.createElement("li");
         li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${item.fecha}`;
         lista.appendChild(li);
       });
+
     })
     .catch(err => {
       console.error("❌ No se pudo cargar el historial:", err);
