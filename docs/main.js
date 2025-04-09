@@ -7,12 +7,15 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
-document.getElementById("fileInput").addEventListener("change", (event) => {
+const fileInput = document.getElementById("fileInput");
+
+fileInput.addEventListener("change", (event) => {
   const files = event.target.files;
   const accion = document.querySelector('input[name="accion"]:checked').value;
 
+  // 🧽 Limpiar puntos y líneas anteriores
   map.eachLayer((layer) => {
-    if (layer instanceof L.Polyline || layer instanceof L.Marker) {
+    if (layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
       map.removeLayer(layer);
     }
   });
@@ -38,6 +41,9 @@ document.getElementById("fileInput").addEventListener("change", (event) => {
     };
     reader.readAsText(file);
   });
+
+  // ✅ Solución: resetear input para forzar cambio incluso con el mismo archivo
+  fileInput.value = "";
 });
 
 function subirCSVaZenodo(file) {
@@ -82,3 +88,4 @@ function cargarHistorialDesdeGoogle() {
 
 // Cargar historial al entrar
 cargarHistorialDesdeGoogle();
+
