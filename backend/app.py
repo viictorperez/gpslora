@@ -58,9 +58,12 @@ def subir_csv_a_zenodo():
 
         # Paso 2: Subir archivo
         files_url = f"{ZENODO_API_URL}/{deposito_id}/files"
-        upload_response = requests.post(files_url, headers=HEADERS, files={
-            'file': (archivo.filename, archivo.stream, 'text/csv')
-        })
+
+        upload_response = requests.post(
+            files_url,
+            headers={"Authorization": f"Bearer {ZENODO_TOKEN}"},  # sin Content-Type aquí
+            files={"file": (archivo.filename, archivo.read())}    # usa .read() en vez de .stream
+        )
 
         app.logger.info(f"📤 Subida: {upload_response.status_code}")
         if upload_response.status_code != 201:
