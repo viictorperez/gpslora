@@ -42,12 +42,22 @@ fileInput.addEventListener("change", (event) => {
     reader.readAsText(file);
   });
 
-  fileInput.value = ""; // permite subir el mismo archivo más de una vez
+  fileInput.value = "";
 });
 
 function subirCSVaZenodo(file) {
+  const autor = document.getElementById("autor").value.trim();
+  const descripcion = document.getElementById("descripcion").value.trim();
+
+  if (!autor || !descripcion) {
+    alert("Por favor, completa tu nombre y una descripción antes de subir.");
+    return;
+  }
+
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("autor", autor);
+  formData.append("descripcion", descripcion);
 
   fetch("https://backend-gps-zenodo.onrender.com/subir-zenodo", {
     method: "POST",
