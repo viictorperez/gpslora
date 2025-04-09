@@ -20,42 +20,62 @@ GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzF8l5UIJC0ED5y6bWr
 
 @app.route('/subir-zenodo', methods=['POST'])
 def subir_csv_a_zenodo():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file provided"}), 400
+    try:
+        print("📥 Recibiendo archivo...")
+        if 'file' not in request.files:
+            print("❌ Archivo no encontrado en la solicitud")
+            return jsonify({"error": "No file provided"}), 400
 
-    archivo = request.files['file']
-    if not archivo.filename.endswith('.csv'):
-        return jsonify({"error": "Only CSV files are allowed"}), 400
+        archivo = request.files['file']
+        print("📄 Nombre del archivo recibido:", archivo.filename)
 
-    # Paso 1: Crear depósito en Zenodo
-    response = requests.post(ZENODO_API_URL, json={}, headers=HEADERS)
-    if response.status_code != 201:
-        return jsonify({"error": "Failed to create Zenodo deposition"}), 500
+        if not archivo.filename.endswith('.csv'):
+            print("❌ Archivo no es .csv")
+            return jsonify({"error": "Only CSV files are allowed"}), 400
 
-    deposito = response.json()
-    deposito_id = deposito['id']
+        # Crear depósito
+        response = requests.post(ZENODO_API_URL, json={}, headers=HEADERS)
+        print("📝 Respuesta al crear depósito:", response.status_code)
 
-    # Paso 2: Subir el archivo a Zenodo
-    files_url = f"{ZENODO_API_URL}/{deposito_id}/files"
-    upload_response = requests.post(files_url, headers=HEADERS, files={'file': (archivo.filename, archivo.stream, 'text/csv')})
+        if response.status_code != 201:
+            print("❌ Error creando depósito:", response.text)
+            return jsonify({"error": "Failed to create Zenodo deposition"}), 500
 
-    if upload_response.status_code != 201:
-        return jsonify({"error": "Failed to upload the file to Zenodo"}), 500
+        deposito = response.json()
+        deposito_id = deposito['id']
 
-    # Paso 3: Publicar el depósito
-    publish_url = f"{ZENODO_API_URL}/{deposito_id}/actions/publish"
-    publish_response = requests.post(publish_url, headers=HEADERS)
+        # Subir archivo
+        files_url = f"{ZENODO_API_URL}/{deposito_id}/files"
+        upload_response = requests.post(files_url, headers=HEADERS, files={
+            'file': (archivo.filename, archivo.stream, 'text/csv')
+        })
 
-    if publish_response.status_code != 202:
-        return jsonify({"error": "Failed to publish the deposition"}), 500
+        print("📤 Subida:", upload_response.status_code)
+        if upload_response.status_code != 201:
+            print("❌ Error al subir:", upload_response.text)
+            return jsonify({"error": "Failed to upload the file to Zenodo"}), 500
 
-    # Obtener la URL pública del depósito
-    zenodo_url = f"https://zenodo.org/record/{deposito_id}"
+        # Publicar
+        publish_url = f"{ZENODO_API_URL}/{deposito_id}/actions/publish"
+        publish_response = requests.post(publish_url, headers=HEADERS)
+        print("🚀 Publicación:", publish_response.status_code)
 
-    # Guardar el historial en Google Sheets
-    guardar_en_sheet(archivo.filename, zenodo_url)
+        if publish_response.status_code != 202:
+            print("❌ Error al publicar:", publish_response.text)
+            return jsonify({"error": "Failed to publish the deposition"}), 500
 
-    return jsonify({"zenodo_url": zenodo_url}), 200
+        zenodo_url = f"https://zenodo.org/record/{deposito_id}"
+        print("✅ URL pública:", zenodo_url)
+
+        # Guardar en Sheets
+        guardar_en_sheet(archivo.filename, zenodo_url)
+
+        return jsonify({"zenodo_url": zenodo_url})
+
+    except Exception as e:
+        print("❗ EXCEPCIÓN:", e)
+        return jsonify({"error": "Error interno del servidor", "detalle": str(e)}), 500
+
 
 def guardar_en_sheet(nombre_archivo, url_zenodo):
     datos = {
@@ -71,6 +91,14 @@ def guardar_en_sheet(nombre_archivo, url_zenodo):
 @app.route('/')
 def home():
     return jsonify({"mensaje": "Backend funcionando correctamente 🚀"})
-    
+@app.route('/historial', methods=['GET'])
+def obtener_historial():
+    try:
+        respuesta = requests.get(GOOGLE_SHEETS_URL)
+        datos = respuesta.json()
+        return jsonify(datos)
+    except Exception as e:
+        return jsonify({"error": "No se pudo obtener el historial", "detalle": str(e)}), 500   
+        
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
