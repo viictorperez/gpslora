@@ -18,7 +18,7 @@ CORS(app)
 # Variables de entorno
 ZENODO_TOKEN = os.getenv("ZENODO_TOKEN")
 ZENODO_API_URL = "https://zenodo.org/api/deposit/depositions"
-GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwdZY2Z2z0k5NJCvwaq2ESI-dg4qlCbd1LzUA0VT-XNX5tB-RS8g6VJH3HISdFw6D45-A/exec"  # Sustituye por la tuya
+GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbypqnAFQ_M2wmbKAbUmVtfY45-3tx3BPtdDHWgfrsBFYJg0Gk3n4Qkd4nDMsOqN0AERuA/exec"  # Sustituye por la tuya
 
 @app.route('/')
 def home():
@@ -121,6 +121,17 @@ def obtener_historial():
     except Exception as e:
         app.logger.exception("❌ Error obteniendo historial desde Google Sheets")
         return jsonify({"error": "No se pudo obtener el historial", "detalle": str(e)}), 500
-
+        
+@app.route('/borrar-historial', methods=['POST'])
+def borrar_historial():
+    try:
+        app.logger.info("🗑️ Solicitando borrado de historial en Google Sheets...")
+        payload = { "borrar": True }
+        response = requests.post(GOOGLE_SHEETS_URL, data=json.dumps(payload))
+        return jsonify({"mensaje": "Historial borrado correctamente"})
+    except Exception as e:
+        app.logger.exception("❌ Error al borrar historial")
+        return jsonify({"error": "No se pudo borrar el historial", "detalle": str(e)}), 500
+        
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
