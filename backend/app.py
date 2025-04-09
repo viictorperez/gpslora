@@ -69,4 +69,4 @@ def guardar_en_sheet(nombre_archivo, url_zenodo):
         print("⚠️ Error al guardar en Google Sheets:", e)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
