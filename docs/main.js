@@ -1,97 +1,78 @@
-let mapa;
-let rutas = [];
-let marcadores = [];
-const colores = ['blue', 'green', 'red', 'orange', 'purple', 'brown', 'black'];
+let map = L.map('map').setView([41.37, 2.19], 13); // Puerto de BCN
 
-// ✅ URL del Google Sheets API (cámbiala por la tuya)
-const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycbzF8l5UIJC0ED5y6bWrJs7GLaAYehR0lmroWP-Dc_z4ZI_f2Sz0CAkXFbbrBBMo0izsfQ/exec"; // 🚨 Cambia esta URL
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-// 🔹 Inicializa el mapa
-function inicializarMapa(lat, lon) {
-  mapa = L.map('map').setView([lat, lon], 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(mapa);
-}
+const colores = ['red', 'blue', 'green', 'purple', 'orange'];
+let colorIndex = 0;
 
-// 🔹 Limpia el mapa
-function limpiarMapa() {
-  rutas.forEach(r => mapa.removeLayer(r));
-  rutas = [];
-  marcadores.forEach(m => mapa.removeLayer(m));
-  marcadores = [];
-}
+document.getElementById("fileInput").addEventListener("change", (event) => {
+  const files = event.target.files;
+  const accion = document.querySelector('input[name="accion"]:checked').value;
 
-// 🔹 Dibuja el contenido del CSV en el mapa
-function procesarCSV(texto, color, nombre) {
-  const lineas = texto.trim().split('\n').slice(1);
-  const puntos = lineas.map(linea => {
-    const [id, lat, lon] = linea.split(',');
-    return { id, lat: parseFloat(lat), lon: parseFloat(lon) };
+  map.eachLayer((layer) => {
+    if (layer instanceof L.Polyline || layer instanceof L.Marker) {
+      map.removeLayer(layer);
+    }
   });
 
-  if (!mapa) {
-    inicializarMapa(puntos[0].lat, puntos[0].lon);
-  }
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const contenido = e.target.result.trim();
+      const lineas = contenido.split('\n').slice(1);
+      const puntos = lineas.map(l => {
+        const [timestamp, lat, lon] = l.split(',');
+        return [parseFloat(lat), parseFloat(lon)];
+      });
 
-  const coordenadas = puntos.map(p => [p.lat, p.lon]);
-  const ruta = L.polyline(coordenadas, { color: color, weight: 4 }).bindPopup(`Track: ${nombre}`);
-  ruta.addTo(mapa);
-  rutas.push(ruta);
+      const color = colores[colorIndex++ % colores.length];
+      L.polyline(puntos, { color }).addTo(map);
+      puntos.forEach(p => L.circleMarker(p, { radius: 3, color }).addTo(map));
+      map.fitBounds(puntos);
 
-  puntos.forEach(p => {
-    const marcador = L.circleMarker([p.lat, p.lon], {
-      radius: 4,
-      color: color
-    }).bindPopup(`ID: ${p.id}<br>Lat: ${p.lat}<br>Lon: ${p.lon}`);
-    marcador.addTo(mapa);
-    marcadores.push(marcador);
+      if (accion === 'subir') {
+        subirCSVaZenodo(file);
+      }
+    };
+    reader.readAsText(file);
   });
+});
 
-  mapa.fitBounds(L.featureGroup(rutas).getBounds());
-}
-
-// 🔹 Subir CSV a backend → Zenodo
-function subirCSVaZenodo(archivo) {
+function subirCSVaZenodo(file) {
   const formData = new FormData();
-  formData.append("file", archivo);
+  formData.append("file", file);
 
   fetch("https://backend-gps-zenodo.onrender.com/subir-zenodo", {
     method: "POST",
     body: formData
   })
-  .then(res => res.json())
-  .then(data => {
-    if (data.zenodo_url) {
-      mostrarEnlaceZenodo(archivo.name, data.zenodo_url, new Date().toLocaleString());
-      alert("Archivo subido a Zenodo:\n" + data.zenodo_url);
-    } else {
-      alert("Error al subir a Zenodo:\n" + JSON.stringify(data));
-    }
-  })
-  .catch(err => {
-    console.error("❌ Error al conectar con el backend:", err);
-    alert("Hubo un error al conectar con el servidor.");
-  });
+    .then(res => res.json())
+    .then(data => {
+      if (data.zenodo_url) {
+        alert("📦 Archivo subido a Zenodo: " + data.zenodo_url);
+        cargarHistorialDesdeGoogle();
+      } else {
+        alert("❌ Error al subir a Zenodo");
+        console.error(data);
+      }
+    })
+    .catch(err => {
+      console.error("❌ Error al conectar con el backend:", err);
+    });
 }
 
-// 🔹 Mostrar enlace en lista
-function mostrarEnlaceZenodo(nombre, url, fecha) {
-  const lista = document.getElementById('zenodoLinks');
-  const li = document.createElement('li');
-  li.innerHTML = `<a href="${url}" target="_blank">${nombre}</a> - ${fecha}`;
-  lista.appendChild(li);
-}
-
-// 🔹 Cargar historial desde backend
-function cargarHistorialDesdeBackend() {
+function cargarHistorialDesdeGoogle() {
   fetch("https://backend-gps-zenodo.onrender.com/historial")
     .then(res => res.json())
     .then(data => {
-      const lista = document.getElementById('zenodoLinks');
-      lista.innerHTML = '';
+      const lista = document.getElementById("historial");
+      lista.innerHTML = "";
       data.forEach(item => {
-        mostrarEnlaceZenodo(item.nombre, item.enlace, item.fecha);
+        const li = document.createElement("li");
+        li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${item.fecha}`;
+        lista.appendChild(li);
       });
     })
     .catch(err => {
@@ -99,28 +80,5 @@ function cargarHistorialDesdeBackend() {
     });
 }
 
-// 🔹 Evento al subir archivos CSV
-document.getElementById('csvInput').addEventListener('change', function (e) {
-  const archivos = Array.from(e.target.files);
-  if (archivos.length === 0) return;
-
-  limpiarMapa();
-
-  archivos.forEach((archivo, i) => {
-    const lector = new FileReader();
-    lector.onload = function (event) {
-      const contenido = event.target.result;
-      const color = colores[(rutas.length + i) % colores.length];
-      procesarCSV(contenido, color, archivo.name);
-      subirCSVaZenodo(archivo);
-    };
-    lector.readAsText(archivo);
-  });
-
-  e.target.value = '';
-});
-
-// 🔹 Cargar historial al iniciar
-cargarHistorialDesdeBackend();
-
-
+// Cargar historial al entrar
+cargarHistorialDesdeGoogle();
