@@ -23,7 +23,9 @@ HEADERS = {
 @app.route('/')
 def home():
     print("🏠 Página raíz visitada")
+    print("🔐 ZENODO_TOKEN:", ZENODO_TOKEN)  # Solo para depuración temporal
     return jsonify({"mensaje": "Backend actualizado correctamente 🚀"})
+
 
 @app.route('/subir-zenodo', methods=['POST'])
 def subir_csv_a_zenodo():
