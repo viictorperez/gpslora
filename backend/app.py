@@ -36,18 +36,15 @@ def subir_csv_a_zenodo():
             return jsonify({"error": "No file provided"}), 400
 
         archivo = request.files['file']
-        app.logger.info(f"📄 Nombre recibido: {archivo.filename}")
+        autor_nombre = request.form.get("autor", "Usuario Web")
+        descripcion = request.form.get("descripcion", "Track GPS subido desde la web")
 
-        if not archivo.filename.endswith('.csv'):
-            return jsonify({"error": "Only CSV files are allowed"}), 400
-
-        # Paso 1: Crear depósito con metadatos
         metadata = {
             "metadata": {
                 "title": archivo.filename,
                 "upload_type": "dataset",
-                "description": "Track GPS subido desde la web",
-                "creators": [{"name": "Usuario Web"}]
+                "description": descripcion,
+                "creators": [{"name": autor_nombre}]
             }
         }
 
