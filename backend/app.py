@@ -15,19 +15,15 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 CORS(app)
 
-# Cargar variables de entorno
+# Variables de entorno
 ZENODO_TOKEN = os.getenv("ZENODO_TOKEN")
 ZENODO_API_URL = "https://zenodo.org/api/deposit/depositions"
-GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwdZY2Z2z0k5NJCvwaq2ESI-dg4qlCbd1LzUA0VT-XNX5tB-RS8g6VJH3HISdFw6D45-A/exec"  # Sustituye con tu URL real
-
-HEADERS = {
-    "Authorization": f"Bearer {ZENODO_TOKEN}",
-    "Content-Type": "application/json"
-}
+GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwdZY2Z2z0k5NJCvwaq2ESI-dg4qlCbd1LzUA0VT-XNX5tB-RS8g6VJH3HISdFw6D45-A/exec"  # Sustituye por la tuya
 
 @app.route('/')
 def home():
     app.logger.info("🏠 Página raíz visitada")
+    app.logger.info(f"🔐 ZENODO_TOKEN: {ZENODO_TOKEN if ZENODO_TOKEN else '❌ No se ha cargado el token'}")
     return jsonify({"mensaje": "Backend actualizado correctamente 🚀"})
 
 @app.route('/subir-zenodo', methods=['POST'])
@@ -45,8 +41,20 @@ def subir_csv_a_zenodo():
         if not archivo.filename.endswith('.csv'):
             return jsonify({"error": "Only CSV files are allowed"}), 400
 
-        # Paso 1: Crear depósito
-        response = requests.post(ZENODO_API_URL, json={}, headers=HEADERS)
+        # Paso 1: Crear depósito con metadatos
+        metadata = {
+            "metadata": {
+                "title": archivo.filename,
+                "upload_type": "dataset",
+                "description": "Track GPS subido desde la web",
+                "creators": [{"name": "Usuario Web"}]
+            }
+        }
+
+        response = requests.post(ZENODO_API_URL, json=metadata, headers={
+            "Authorization": f"Bearer {ZENODO_TOKEN}",
+            "Content-Type": "application/json"
+        })
         app.logger.info(f"📝 Crear depósito: {response.status_code}")
 
         if response.status_code != 201:
@@ -58,11 +66,10 @@ def subir_csv_a_zenodo():
 
         # Paso 2: Subir archivo
         files_url = f"{ZENODO_API_URL}/{deposito_id}/files"
-
         upload_response = requests.post(
             files_url,
-            headers={"Authorization": f"Bearer {ZENODO_TOKEN}"},  # sin Content-Type aquí
-            files={"file": (archivo.filename, archivo.read())}    # usa .read() en vez de .stream
+            headers={"Authorization": f"Bearer {ZENODO_TOKEN}"},
+            files={"file": (archivo.filename, archivo.read())}
         )
 
         app.logger.info(f"📤 Subida: {upload_response.status_code}")
@@ -72,9 +79,9 @@ def subir_csv_a_zenodo():
             app.logger.error(f"➡️ Respuesta: {upload_response.text}")
             return jsonify({"error": "Error al subir archivo"}), 500
 
-        # Paso 3: Publicar depósito
+        # Paso 3: Publicar
         publish_url = f"{ZENODO_API_URL}/{deposito_id}/actions/publish"
-        publish_response = requests.post(publish_url, headers=HEADERS)
+        publish_response = requests.post(publish_url, headers={"Authorization": f"Bearer {ZENODO_TOKEN}"})
         app.logger.info(f"🚀 Publicar: {publish_response.status_code}")
 
         if publish_response.status_code != 202:
@@ -117,4 +124,3 @@ def obtener_historial():
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
-
