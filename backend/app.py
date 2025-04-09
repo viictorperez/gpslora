@@ -23,7 +23,6 @@ GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbypqnAFQ_M2wmbKAbUm
 @app.route('/')
 def home():
     app.logger.info("🏠 Página raíz visitada")
-    app.logger.info(f"🔐 ZENODO_TOKEN: {ZENODO_TOKEN if ZENODO_TOKEN else '❌ No se ha cargado el token'}")
     return jsonify({"mensaje": "Backend actualizado correctamente 🚀"})
 
 @app.route('/subir-zenodo', methods=['POST'])
