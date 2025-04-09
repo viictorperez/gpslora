@@ -6,8 +6,27 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     #map { height: 500px; margin-bottom: 1em; }
-    #borrarHistorial { margin-top: 1em; background: #d9534f; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
-    #borrarHistorial:hover { background: #c9302c; }
+    #borrarHistorial {
+      background: #d9534f;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #borrarHistorial:hover {
+      background: #c9302c;
+    }
+    #infoZenodo {
+      margin: 1em 0;
+    }
+    input[type="text"] {
+      margin-top: 0.3em;
+      margin-bottom: 0.5em;
+      width: 100%;
+      max-width: 400px;
+      padding: 6px;
+    }
   </style>
 </head>
 <body>
@@ -15,19 +34,38 @@
 
   <input type="file" id="fileInput" accept=".csv" multiple />
   
-  <!-- Opción para visualizar o subir -->
+  <!-- Opción de visualización -->
   <div>
     <label><input type="radio" name="accion" value="ver" checked> Solo visualizar</label>
     <label><input type="radio" name="accion" value="subir"> Visualizar y subir a Zenodo</label>
   </div>
 
+  <!-- Campos adicionales si se elige subir -->
+  <div id="infoZenodo" style="display: none;">
+    <label>Autor:<br><input type="text" id="autor" placeholder="Tu nombre completo" /></label><br>
+    <label>Descripción:<br><input type="text" id="descripcion" placeholder="Descripción del archivo" /></label>
+  </div>
+
   <div id="map"></div>
 
-  <h3>Historial de archivos subidos:</h3>
+  <!-- Título + botón borrar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; max-width: 500px;">
+    <h3 style="margin: 0;">Historial de archivos subidos:</h3>
+    <button id="borrarHistorial">🗑️ Borrar historial</button>
+  </div>
+
   <ul id="historial"></ul>
-  <button id="borrarHistorial">🗑️ Borrar historial</button>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="main.js"></script>
+
+  <!-- Mostrar/ocultar campos de subida -->
+  <script>
+    const radios = document.querySelectorAll('input[name="accion"]');
+    const infoZenodo = document.getElementById("infoZenodo");
+    radios.forEach(r => r.addEventListener("change", () => {
+      infoZenodo.style.display = document.querySelector('input[name="accion"]:checked').value === "subir" ? "block" : "none";
+    }));
+  </script>
 </body>
 </html>
