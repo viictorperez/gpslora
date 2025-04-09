@@ -42,8 +42,7 @@ fileInput.addEventListener("change", (event) => {
     reader.readAsText(file);
   });
 
-  // ✅ Solución: resetear input para forzar cambio incluso con el mismo archivo
-  fileInput.value = "";
+  fileInput.value = ""; // permite subir el mismo archivo más de una vez
 });
 
 function subirCSVaZenodo(file) {
@@ -86,6 +85,21 @@ function cargarHistorialDesdeGoogle() {
     });
 }
 
-// Cargar historial al entrar
-cargarHistorialDesdeGoogle();
+document.getElementById("borrarHistorial").addEventListener("click", () => {
+  if (confirm("¿Estás seguro de que quieres borrar todo el historial?")) {
+    fetch("https://backend-gps-zenodo.onrender.com/borrar-historial", {
+      method: "POST"
+    })
+      .then(res => res.json())
+      .then(data => {
+        alert("✅ Historial borrado");
+        cargarHistorialDesdeGoogle();
+      })
+      .catch(err => {
+        alert("❌ Error al borrar historial");
+        console.error(err);
+      });
+  }
+});
 
+cargarHistorialDesdeGoogle();
