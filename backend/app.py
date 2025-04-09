@@ -20,10 +20,13 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 @app.route('/')
 def home():
-    print("🏠 Página raíz visitada")
-    print("🔐 ZENODO_TOKEN:", ZENODO_TOKEN if ZENODO_TOKEN else "❌ No se ha cargado el token")
+    app.logger.info("🏠 Página raíz visitada")
+    app.logger.info(f"🔐 ZENODO_TOKEN: {ZENODO_TOKEN if ZENODO_TOKEN else '❌ No se ha cargado el token'}")
     return jsonify({"mensaje": "Backend actualizado correctamente 🚀"})
 
 
