@@ -67,6 +67,10 @@ def guardar_en_sheet(nombre_archivo, url_zenodo):
         requests.post(GOOGLE_SHEETS_URL, data=json.dumps(datos))
     except Exception as e:
         print("⚠️ Error al guardar en Google Sheets:", e)
-
+        
+@app.route('/')
+def home():
+    return jsonify({"mensaje": "Backend funcionando correctamente 🚀"})
+    
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
