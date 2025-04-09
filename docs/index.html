@@ -6,6 +6,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     #map { height: 500px; margin-bottom: 1em; }
+    #borrarHistorial { margin-top: 1em; background: #d9534f; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
+    #borrarHistorial:hover { background: #c9302c; }
   </style>
 </head>
 <body>
@@ -13,14 +15,17 @@
 
   <input type="file" id="fileInput" accept=".csv" multiple />
   
-  <!-- Nueva opción -->
+  <!-- Opción para visualizar o subir -->
   <div>
     <label><input type="radio" name="accion" value="ver" checked> Solo visualizar</label>
     <label><input type="radio" name="accion" value="subir"> Visualizar y subir a Zenodo</label>
   </div>
 
   <div id="map"></div>
+
+  <h3>Historial de archivos subidos:</h3>
   <ul id="historial"></ul>
+  <button id="borrarHistorial">🗑️ Borrar historial</button>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="main.js"></script>
