@@ -18,7 +18,7 @@ CORS(app)
 # Cargar variables de entorno
 ZENODO_TOKEN = os.getenv("ZENODO_TOKEN")
 ZENODO_API_URL = "https://zenodo.org/api/deposit/depositions"
-GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzF8l5UIJC0ED5y6bWrJs7GLaAYehR0lmroWP-Dc_z4ZI_f2Sz0CAkXFbbrBBMo0izsfQ/exec"  # Sustituye con tu URL real
+GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwdZY2Z2z0k5NJCvwaq2ESI-dg4qlCbd1LzUA0VT-XNX5tB-RS8g6VJH3HISdFw6D45-A/exec"  # Sustituye con tu URL real
 
 HEADERS = {
     "Authorization": f"Bearer {ZENODO_TOKEN}",
