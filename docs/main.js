@@ -49,7 +49,8 @@ function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
   const descripcion = document.getElementById("descripcion").value.trim();
   const cuenta = document.getElementById("zenodoCuenta")?.value || "A"; // si usas selección de cuenta
-  const horaLocal = new Date().toISOString(); // ⏰ hora local del navegador
+  const horaLocal = new Date().toLocaleString("sv-SE"); // ✅ formato legible y sortable: YYYY-MM-DD HH:MM:SS
+
 
   if (!autor || !descripcion) {
     alert("Por favor, completa tu nombre y una descripción antes de subir.");
