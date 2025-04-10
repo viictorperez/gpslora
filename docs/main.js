@@ -8,9 +8,13 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
-// Guardar el último track cargado para reproducir
 let ultimoTrack = [];
 let ultimoColor = 'blue';
+let animationInterval = null;
+let animationIndex = 0;
+let animationLine = [];
+let animationMarkers = [];
+let animationSpeed = 500; // Default speed in ms
 
 const fileInput = document.getElementById("fileInput");
 
@@ -18,7 +22,6 @@ fileInput.addEventListener("change", (event) => {
   const files = event.target.files;
   const accion = document.querySelector('input[name="accion"]:checked').value;
 
-  // 🧽 Limpiar puntos y líneas anteriores
   map.eachLayer((layer) => {
     if (layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
       map.removeLayer(layer);
@@ -56,7 +59,6 @@ fileInput.addEventListener("change", (event) => {
         map.fitBounds(puntos);
       }
 
-      // Guardar el track para reproducir
       ultimoTrack = puntos;
       ultimoColor = color;
 
@@ -74,7 +76,6 @@ function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
   const descripcion = document.getElementById("descripcion").value.trim();
   const cuenta = document.getElementById("zenodoCuenta")?.value || "A";
-
   const horaUTC = new Date().toISOString();
 
   if (!autor || !descripcion) {
@@ -127,7 +128,6 @@ function cargarHistorialDesdeGoogle() {
         li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${item.fecha}`;
         lista.appendChild(li);
       });
-
     })
     .catch(err => {
       console.error("❌ No se pudo cargar el historial:", err);
@@ -153,54 +153,80 @@ document.getElementById("borrarHistorial").addEventListener("click", () => {
 
 window.addEventListener("DOMContentLoaded", cargarHistorialDesdeGoogle);
 
-// Botón ▶ para reproducir puntos
 const playBtn = L.control({ position: 'topright' });
 playBtn.onAdd = function () {
-  const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-  div.innerHTML = '▶️';
-  div.style.backgroundColor = 'white';
-  div.style.padding = '6px';
-  div.style.cursor = 'pointer';
-  div.title = 'Reproducir recorrido';
-  div.onclick = () => {
+  const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+
+  const play = document.createElement('button');
+  play.innerHTML = '▶️';
+  play.title = 'Reproducir';
+  play.onclick = () => {
     if (ultimoTrack.length > 0) {
-      reproducirTrackAnimado(ultimoTrack, ultimoColor);
+      startAnimation();
     } else {
-      alert("Primero carga un track para reproducirlo.");
+      alert("Carga un track primero.");
     }
   };
-  return div;
+
+  const pause = document.createElement('button');
+  pause.innerHTML = '⏸';
+  pause.title = 'Pausar';
+  pause.onclick = () => clearInterval(animationInterval);
+
+  const slower = document.createElement('button');
+  slower.innerHTML = '➖';
+  slower.title = 'Reducir velocidad';
+  slower.onclick = () => animationSpeed += 200;
+
+  const faster = document.createElement('button');
+  faster.innerHTML = '➕';
+  faster.title = 'Aumentar velocidad';
+  faster.onclick = () => animationSpeed = Math.max(100, animationSpeed - 200);
+
+  [play, pause, slower, faster].forEach(btn => {
+    btn.style.background = 'white';
+    btn.style.border = 'none';
+    btn.style.padding = '4px';
+    btn.style.cursor = 'pointer';
+    container.appendChild(btn);
+  });
+
+  return container;
 };
 playBtn.addTo(map);
 
-function reproducirTrackAnimado(puntos, color) {
-  let i = 0;
-  const delay = 500; // ms entre puntos
-  const linea = [];
+function startAnimation() {
+  map.eachLayer((layer) => {
+    if (layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
+      map.removeLayer(layer);
+    }
+  });
 
-  const interval = setInterval(() => {
-    if (i >= puntos.length) {
-      clearInterval(interval);
+  animationIndex = 0;
+  animationLine = [];
+  clearInterval(animationInterval);
+
+  animationInterval = setInterval(() => {
+    if (animationIndex >= ultimoTrack.length) {
+      clearInterval(animationInterval);
       return;
     }
 
-    const punto = puntos[i];
-    linea.push(punto);
+    const punto = ultimoTrack[animationIndex];
+    animationLine.push(punto);
 
     L.circleMarker(punto, {
       radius: 4,
-      color: color,
+      color: ultimoColor,
       fillOpacity: 0.8
     })
-    .bindPopup(`<strong>Punto:</strong> ${i + 1}<br>Lat: ${punto[0]}<br>Lon: ${punto[1]}`)
-    .addTo(map)
-    .openPopup();
+    .bindPopup(`<strong>Punto:</strong> ${animationIndex + 1}<br>Lat: ${punto[0]}<br>Lon: ${punto[1]}`)
+    .addTo(map);
 
-    if (linea.length > 1) {
-      L.polyline(linea.slice(linea.length - 2), { color }).addTo(map);
+    if (animationLine.length > 1) {
+      L.polyline(animationLine.slice(animationLine.length - 2), { color: ultimoColor }).addTo(map);
     }
 
-    i++;
-  }, delay);
+    animationIndex++;
+  }, animationSpeed);
 }
-
