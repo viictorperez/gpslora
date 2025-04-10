@@ -2,15 +2,10 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Mapa GPS Oceanográfico</title>
+  <title>Mapa GPS</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #map {
-      height: 500px;
-      margin-bottom: 1em;
-      position: relative;
-    }
-
+    #map { height: 500px; margin-bottom: 1em; position: relative; }
     #borrarHistorial {
       background: #d9534f;
       color: white;
@@ -19,15 +14,12 @@
       border-radius: 5px;
       cursor: pointer;
     }
-
     #borrarHistorial:hover {
       background: #c9302c;
     }
-
     #infoZenodo {
       margin: 1em 0;
     }
-
     input[type="text"] {
       margin-top: 0.3em;
       margin-bottom: 0.5em;
@@ -35,50 +27,35 @@
       max-width: 400px;
       padding: 6px;
     }
-
-    /* Controles de animación */
-    #controles {
+    .barra-controles {
       position: absolute;
       bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 5px 10px;
       border-radius: 8px;
-      padding: 6px 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       z-index: 1000;
     }
-
-    #controles button {
-      background: #337ab7;
-      border: none;
-      color: white;
-      border-radius: 4px;
-      padding: 6px 10px;
-      font-size: 14px;
+    .barra-controles button {
+      font-size: 12px;
+      padding: 4px 6px;
       cursor: pointer;
     }
-
-    #controles button:hover {
-      background: #23527c;
-    }
-
     #progreso {
-      flex-grow: 1;
+      width: 150px;
       height: 6px;
-      background: #ddd;
-      border-radius: 4px;
+      background: #eee;
+      border-radius: 3px;
       overflow: hidden;
-      margin-left: 8px;
     }
-
     #progreso-barra {
       height: 100%;
+      background: #3b82f6;
       width: 0%;
-      background: #5cb85c;
-      transition: width 0.2s;
     }
   </style>
 </head>
@@ -86,7 +63,7 @@
   <h1>Mapa de Tracks GPS</h1>
 
   <input type="file" id="fileInput" accept=".csv" multiple />
-
+  
   <!-- Opción de visualización -->
   <div>
     <label><input type="radio" name="accion" value="ver" checked> Solo visualizar</label>
@@ -100,12 +77,11 @@
   </div>
 
   <div id="map">
-    <!-- Controles sobre el mapa -->
-    <div id="controles">
-      <button id="slower">⏪</button>
-      <button id="play">▶️</button>
-      <button id="pause">⏸️</button>
-      <button id="faster">⏩</button>
+    <div class="barra-controles">
+      <button id="play">▶</button>
+      <button id="pause">⏸</button>
+      <button id="slower">➖</button>
+      <button id="faster">➕</button>
       <div id="progreso"><div id="progreso-barra"></div></div>
     </div>
   </div>
