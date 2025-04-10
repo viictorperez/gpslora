@@ -6,6 +6,7 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+import pytz
 
 load_dotenv()
 
@@ -88,7 +89,8 @@ def subir_csv_a_zenodo():
         zenodo_url = f"https://zenodo.org/record/{deposito_id}"
         app.logger.info(f"✅ Subido con éxito: {zenodo_url}")
 
-        guardar_en_sheet(archivo.filename, zenodo_url)
+        hora_local = request.form.get("hora_local")
+        guardar_en_sheet(archivo.filename, zenodo_url, hora_local)
 
         return jsonify({"zenodo_url": zenodo_url})
 
@@ -96,17 +98,27 @@ def subir_csv_a_zenodo():
         app.logger.exception("❗ EXCEPCIÓN en subir_csv_a_zenodo")
         return jsonify({"error": "Error interno del servidor", "detalle": str(e)}), 500
 
-def guardar_en_sheet(nombre_archivo, url_zenodo):
+def guardar_en_sheet(nombre_archivo, url_zenodo, hora_local=None):
+    if hora_local:
+        # Convertimos ISO string a formato bonito (sin milisegundos)
+        fecha_formateada = hora_local.replace("T", " ").split(".")[0]
+    else:
+        zona = pytz.timezone("Europe/Madrid")
+        ahora = datetime.datetime.now(zona)
+        fecha_formateada = ahora.strftime('%Y-%m-%d %H:%M:%S')
+
     datos = {
         "nombre": nombre_archivo,
         "enlace": url_zenodo,
-        "fecha": datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        "fecha": fecha_formateada
     }
+
     try:
         response = requests.post(GOOGLE_SHEETS_URL, data=json.dumps(datos))
         app.logger.info(f"🧾 Guardado en Sheets: {response.status_code}")
     except Exception as e:
         app.logger.exception("⚠️ Error al guardar en Sheets")
+
 
 @app.route('/historial', methods=['GET'])
 def obtener_historial():
