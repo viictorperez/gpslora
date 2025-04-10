@@ -5,6 +5,24 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
+let windyAPIKey = null;
+
+fetch("https://backend-gps-zenodo.onrender.com/openweather-key")
+  .then(res => res.json())
+  .then(data => {
+    windyAPIKey = data.key;
+    if (windyAPIKey) {
+      L.tileLayer(`https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${windyAPIKey}`, {
+        attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>',
+        opacity: 0.5
+      }).addTo(map);
+    }
+  })
+  .catch(err => {
+    console.warn("⚠️ No se pudo cargar la capa de viento:", err);
+  });
+
+
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
