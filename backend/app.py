@@ -21,10 +21,6 @@ ZENODO_TOKEN = os.getenv("ZENODO_TOKEN")
 ZENODO_API_URL = "https://zenodo.org/api/deposit/depositions"
 GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbypqnAFQ_M2wmbKAbUmVtfY45-3tx3BPtdDHWgfrsBFYJg0Gk3n4Qkd4nDMsOqN0AERuA/exec"  # Sustituye por la tuya
 
-@app.route('/windy-key', methods=['GET'])
-def get_windy_key():
-    return jsonify({"key": os.getenv("WINDY_API_KEY")})
-    
 @app.route('/')
 def home():
     app.logger.info("🏠 Página raíz visitada")
