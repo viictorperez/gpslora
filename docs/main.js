@@ -26,12 +26,14 @@ fileInput.addEventListener("change", (event) => {
       const contenido = e.target.result.trim();
       const lineas = contenido.split('\n').slice(1);
       const puntos = lineas.map(l => {
-        const [timestamp, lat, lon] = l.split(',');
+        const [id, lat, lon] = l.split(',');
         return [parseFloat(lat), parseFloat(lon)];
       });
 
       const color = colores[colorIndex++ % colores.length];
       L.polyline(puntos, { color }).addTo(map);
+
+      // Mostrar info de cada punto
       lineas.forEach(linea => {
         const [id, lat, lon] = linea.split(',');
         const punto = [parseFloat(lat), parseFloat(lon)];
@@ -44,6 +46,7 @@ fileInput.addEventListener("change", (event) => {
         .bindPopup(`<strong>📍 Punto ID:</strong> ${id}<br><b>Lat:</b> ${lat}<br><b>Lon:</b> ${lon}`)
         .addTo(map);
       });
+
       map.fitBounds(puntos);
 
       if (accion === 'subir') {
@@ -59,17 +62,9 @@ fileInput.addEventListener("change", (event) => {
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
   const descripcion = document.getElementById("descripcion").value.trim();
-  const cuenta = document.getElementById("zenodoCuenta")?.value || "A"; // si usas selección de cuenta
-  const offset = -new Date().getTimezoneOffset(); // minutos
-  const sign = offset >= 0 ? "+" : "-";
-  const horas = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
-  const minutos = String(Math.abs(offset) % 60).padStart(2, "0");
-  const zona = `${sign}${horas}:${minutos}`;
+  const cuenta = document.getElementById("zenodoCuenta")?.value || "A";
 
-  const fecha = new Date();
-  const horaLocal = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")} ${String(fecha.getHours()).padStart(2, "0")}:${String(fecha.getMinutes()).padStart(2, "0")}:${String(fecha.getSeconds()).padStart(2, "0")} ${zona}`;
-
-
+  const horaUTC = new Date().toISOString(); // ✅ UTC real, sin tocar
 
   if (!autor || !descripcion) {
     alert("Por favor, completa tu nombre y una descripción antes de subir.");
@@ -81,7 +76,7 @@ function subirCSVaZenodo(file) {
   formData.append("autor", autor);
   formData.append("descripcion", descripcion);
   formData.append("cuenta", cuenta);
-  formData.append("hora_local", horaLocal); // 🆕 hora desde el navegador
+  formData.append("hora_local", horaUTC); // ahora UTC real
 
   fetch("https://backend-gps-zenodo.onrender.com/subir-zenodo", {
     method: "POST",
@@ -102,7 +97,6 @@ function subirCSVaZenodo(file) {
     });
 }
 
-
 function cargarHistorialDesdeGoogle() {
   fetch("https://backend-gps-zenodo.onrender.com/historial")
     .then(res => res.json())
@@ -115,31 +109,19 @@ function cargarHistorialDesdeGoogle() {
         return;
       }
 
-      // Ordenamos por fecha descendente (más nuevo arriba)
       const ordenado = data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
       ordenado.forEach(item => {
-        const fecha = new Date(item.fecha);
-        const fechaFormateada = fecha.toLocaleString("es-ES", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
+        const li = document.createElement("li");
+        li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${item.fecha}`;
+        lista.appendChild(li);
       });
-
-  const li = document.createElement("li");
-  li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${fechaFormateada}`;
-  lista.appendChild(li);
-});
 
     })
     .catch(err => {
       console.error("❌ No se pudo cargar el historial:", err);
     });
 }
-
 
 document.getElementById("borrarHistorial").addEventListener("click", () => {
   if (confirm("¿Estás seguro de que quieres borrar todo el historial?")) {
@@ -159,3 +141,4 @@ document.getElementById("borrarHistorial").addEventListener("click", () => {
 });
 
 window.addEventListener("DOMContentLoaded", cargarHistorialDesdeGoogle);
+
