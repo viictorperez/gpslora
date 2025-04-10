@@ -48,6 +48,8 @@ fileInput.addEventListener("change", (event) => {
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
   const descripcion = document.getElementById("descripcion").value.trim();
+  const cuenta = document.getElementById("zenodoCuenta")?.value || "A"; // si usas selección de cuenta
+  const horaLocal = new Date().toISOString(); // ⏰ hora local del navegador
 
   if (!autor || !descripcion) {
     alert("Por favor, completa tu nombre y una descripción antes de subir.");
@@ -58,6 +60,8 @@ function subirCSVaZenodo(file) {
   formData.append("file", file);
   formData.append("autor", autor);
   formData.append("descripcion", descripcion);
+  formData.append("cuenta", cuenta);
+  formData.append("hora_local", horaLocal); // 🆕 hora desde el navegador
 
   fetch("https://backend-gps-zenodo.onrender.com/subir-zenodo", {
     method: "POST",
@@ -77,6 +81,7 @@ function subirCSVaZenodo(file) {
       console.error("❌ Error al conectar con el backend:", err);
     });
 }
+
 
 function cargarHistorialDesdeGoogle() {
   fetch("https://backend-gps-zenodo.onrender.com/historial")
