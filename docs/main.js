@@ -32,7 +32,18 @@ fileInput.addEventListener("change", (event) => {
 
       const color = colores[colorIndex++ % colores.length];
       L.polyline(puntos, { color }).addTo(map);
-      puntos.forEach(p => L.circleMarker(p, { radius: 3, color }).addTo(map));
+      lineas.forEach(linea => {
+        const [id, lat, lon] = linea.split(',');
+        const punto = [parseFloat(lat), parseFloat(lon)];
+
+        L.circleMarker(punto, {
+          radius: 4,
+          color: color,
+          fillOpacity: 0.8
+        })
+      .bindPopup(`<strong>📍 Punto ID:</strong> ${id}<br><b>Lat:</b> ${lat}<br><b>Lon:</b> ${lon}`)
+      .addTo(map);
+    });
       map.fitBounds(puntos);
 
       if (accion === 'subir') {
