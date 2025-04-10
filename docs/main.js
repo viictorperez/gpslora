@@ -44,13 +44,14 @@ fileInput.addEventListener("change", (event) => {
         if (!isNaN(punto[0]) && !isNaN(punto[1])) {
           puntos.push(punto);
 
-          L.circleMarker(punto, {
+          const marker = L.circleMarker(punto, {
             radius: 4,
-            color: color,
+            color: ultimoColor,
             fillOpacity: 0.8
-          })
-          .bindPopup(`<strong>📍 Punto ID:</strong> ${id}<br><b>Lat:</b> ${lat}<br><b>Lon:</b> ${lon}`)
-          .addTo(map);
+          }).addTo(map);
+          
+          marker.bindPopup(`<strong>Punto:</strong> ${animationIndex + 1}<br>Lat: ${punto[0]}<br>Lon: ${punto[1]}`);
+
         }
       });
 
