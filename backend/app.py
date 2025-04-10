@@ -44,7 +44,7 @@ def subir_csv_a_zenodo():
                 "upload_type": "dataset",
                 "description": descripcion,
                 "creators": [{"name": autor_nombre}],
-                "communities": [{"identifier": "rem cientific"}]  # <-- cambia aquí
+                "communities": [{"identifier": "remcientific"}]  # <-- cambia aquí
             }
         }
 
