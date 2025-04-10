@@ -41,9 +41,9 @@ fileInput.addEventListener("change", (event) => {
           color: color,
           fillOpacity: 0.8
         })
-      .bindPopup(`<strong>📍 Punto ID:</strong> ${id}<br><b>Lat:</b> ${lat}<br><b>Lon:</b> ${lon}`)
-      .addTo(map);
-    });
+        .bindPopup(`<strong>📍 Punto ID:</strong> ${id}<br><b>Lat:</b> ${lat}<br><b>Lon:</b> ${lon}`)
+        .addTo(map);
+      });
       map.fitBounds(puntos);
 
       if (accion === 'subir') {
