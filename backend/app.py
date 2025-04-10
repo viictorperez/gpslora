@@ -141,6 +141,10 @@ def borrar_historial():
     except Exception as e:
         app.logger.exception("❌ Error al borrar historial")
         return jsonify({"error": "No se pudo borrar el historial", "detalle": str(e)}), 500
-        
+
+@app.route('/openweather-key')
+def get_openweather_key():
+    return jsonify({ "key": os.getenv("OPENWEATHER_API_KEY") })
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
