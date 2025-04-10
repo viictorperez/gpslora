@@ -49,7 +49,15 @@ function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
   const descripcion = document.getElementById("descripcion").value.trim();
   const cuenta = document.getElementById("zenodoCuenta")?.value || "A"; // si usas selección de cuenta
-  const horaLocal = new Date().toLocaleString("sv-SE"); // ✅ formato legible y sortable: YYYY-MM-DD HH:MM:SS
+  const offset = -new Date().getTimezoneOffset(); // minutos
+  const sign = offset >= 0 ? "+" : "-";
+  const horas = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
+  const minutos = String(Math.abs(offset) % 60).padStart(2, "0");
+  const zona = `${sign}${horas}:${minutos}`;
+
+  const fecha = new Date();
+  const horaLocal = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")} ${String(fecha.getHours()).padStart(2, "0")}:${String(fecha.getMinutes()).padStart(2, "0")}:${String(fecha.getSeconds()).padStart(2, "0")} ${zona}`;
+
 
 
   if (!autor || !descripcion) {
