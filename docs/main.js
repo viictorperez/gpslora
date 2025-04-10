@@ -25,29 +25,31 @@ fileInput.addEventListener("change", (event) => {
     reader.onload = function (e) {
       const contenido = e.target.result.trim();
       const lineas = contenido.split('\n').slice(1);
-      const puntos = lineas.map(l => {
-        const [id, lat, lon] = l.split(',');
-        return [parseFloat(lat), parseFloat(lon)];
-      });
+      const puntos = [];
 
       const color = colores[colorIndex++ % colores.length];
-      L.polyline(puntos, { color }).addTo(map);
 
-      // Mostrar info de cada punto
       lineas.forEach(linea => {
         const [id, lat, lon] = linea.split(',');
         const punto = [parseFloat(lat), parseFloat(lon)];
 
-        L.circleMarker(punto, {
-          radius: 4,
-          color: color,
-          fillOpacity: 0.8
-        })
-        .bindPopup(`<strong>📍 Punto ID:</strong> ${id}<br><b>Lat:</b> ${lat}<br><b>Lon:</b> ${lon}`)
-        .addTo(map);
+        if (!isNaN(punto[0]) && !isNaN(punto[1])) {
+          puntos.push(punto);
+
+          L.circleMarker(punto, {
+            radius: 4,
+            color: color,
+            fillOpacity: 0.8
+          })
+          .bindPopup(`<strong>📍 Punto ID:</strong> ${id}<br><b>Lat:</b> ${lat}<br><b>Lon:</b> ${lon}`)
+          .addTo(map);
+        }
       });
 
-      map.fitBounds(puntos);
+      if (puntos.length > 0) {
+        L.polyline(puntos, { color }).addTo(map);
+        map.fitBounds(puntos);
+      }
 
       if (accion === 'subir') {
         subirCSVaZenodo(file);
@@ -64,7 +66,7 @@ function subirCSVaZenodo(file) {
   const descripcion = document.getElementById("descripcion").value.trim();
   const cuenta = document.getElementById("zenodoCuenta")?.value || "A";
 
-  const horaUTC = new Date().toISOString(); // ✅ UTC real, sin tocar
+  const horaUTC = new Date().toISOString(); // UTC directo
 
   if (!autor || !descripcion) {
     alert("Por favor, completa tu nombre y una descripción antes de subir.");
@@ -76,7 +78,7 @@ function subirCSVaZenodo(file) {
   formData.append("autor", autor);
   formData.append("descripcion", descripcion);
   formData.append("cuenta", cuenta);
-  formData.append("hora_local", horaUTC); // ahora UTC real
+  formData.append("hora_local", horaUTC); // UTC como string ISO
 
   fetch("https://backend-gps-zenodo.onrender.com/subir-zenodo", {
     method: "POST",
@@ -141,4 +143,3 @@ document.getElementById("borrarHistorial").addEventListener("click", () => {
 });
 
 window.addEventListener("DOMContentLoaded", cargarHistorialDesdeGoogle);
-
