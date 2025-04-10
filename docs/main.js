@@ -133,4 +133,4 @@ document.getElementById("borrarHistorial").addEventListener("click", () => {
   }
 });
 
-cargarHistorialDesdeGoogle();
+window.addEventListener("DOMContentLoaded", cargarHistorialDesdeGoogle);
