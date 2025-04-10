@@ -1,3 +1,4 @@
+// Inicializar el mapa
 let map = L.map('map').setView([41.37, 2.19], 13); // Puerto de BCN
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -6,6 +7,10 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
+
+// Guardar el último track cargado para reproducir
+let ultimoTrack = [];
+let ultimoColor = 'blue';
 
 const fileInput = document.getElementById("fileInput");
 
@@ -51,6 +56,10 @@ fileInput.addEventListener("change", (event) => {
         map.fitBounds(puntos);
       }
 
+      // Guardar el track para reproducir
+      ultimoTrack = puntos;
+      ultimoColor = color;
+
       if (accion === 'subir') {
         subirCSVaZenodo(file);
       }
@@ -66,7 +75,7 @@ function subirCSVaZenodo(file) {
   const descripcion = document.getElementById("descripcion").value.trim();
   const cuenta = document.getElementById("zenodoCuenta")?.value || "A";
 
-  const horaUTC = new Date().toISOString(); // UTC directo
+  const horaUTC = new Date().toISOString();
 
   if (!autor || !descripcion) {
     alert("Por favor, completa tu nombre y una descripción antes de subir.");
@@ -78,7 +87,7 @@ function subirCSVaZenodo(file) {
   formData.append("autor", autor);
   formData.append("descripcion", descripcion);
   formData.append("cuenta", cuenta);
-  formData.append("hora_local", horaUTC); // UTC como string ISO
+  formData.append("hora_local", horaUTC);
 
   fetch("https://backend-gps-zenodo.onrender.com/subir-zenodo", {
     method: "POST",
@@ -143,3 +152,55 @@ document.getElementById("borrarHistorial").addEventListener("click", () => {
 });
 
 window.addEventListener("DOMContentLoaded", cargarHistorialDesdeGoogle);
+
+// Botón ▶ para reproducir puntos
+const playBtn = L.control({ position: 'topright' });
+playBtn.onAdd = function () {
+  const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+  div.innerHTML = '▶️';
+  div.style.backgroundColor = 'white';
+  div.style.padding = '6px';
+  div.style.cursor = 'pointer';
+  div.title = 'Reproducir recorrido';
+  div.onclick = () => {
+    if (ultimoTrack.length > 0) {
+      reproducirTrackAnimado(ultimoTrack, ultimoColor);
+    } else {
+      alert("Primero carga un track para reproducirlo.");
+    }
+  };
+  return div;
+};
+playBtn.addTo(map);
+
+function reproducirTrackAnimado(puntos, color) {
+  let i = 0;
+  const delay = 500; // ms entre puntos
+  const linea = [];
+
+  const interval = setInterval(() => {
+    if (i >= puntos.length) {
+      clearInterval(interval);
+      return;
+    }
+
+    const punto = puntos[i];
+    linea.push(punto);
+
+    L.circleMarker(punto, {
+      radius: 4,
+      color: color,
+      fillOpacity: 0.8
+    })
+    .bindPopup(`<strong>Punto:</strong> ${i + 1}<br>Lat: ${punto[0]}<br>Lon: ${punto[1]}`)
+    .addTo(map)
+    .openPopup();
+
+    if (linea.length > 1) {
+      L.polyline(linea.slice(linea.length - 2), { color }).addTo(map);
+    }
+
+    i++;
+  }, delay);
+}
+
