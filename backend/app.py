@@ -1,4 +1,4 @@
-import os
+    import os
 import json
 import datetime
 import requests
@@ -43,7 +43,8 @@ def subir_csv_a_zenodo():
                 "title": archivo.filename,
                 "upload_type": "dataset",
                 "description": descripcion,
-                "creators": [{"name": autor_nombre}]
+                "creators": [{"name": autor_nombre}],
+                "communities": [{"identifier": "remcientific"}]  # <-- cambia aquí
             }
         }
 
