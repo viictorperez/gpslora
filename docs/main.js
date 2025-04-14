@@ -19,9 +19,41 @@ fetch("https://backend-gps-zenodo.onrender.com/openweather-key")
     }
   })
   .catch(err => {
-    console.warn("⚠️ No se pudo cargar la capa de viento:", err);
+    console.warn("⚠️ No se pudo cargar la capa de viento de OpenWeather:", err);
   });
 
+// 🌬️ Leaflet.Velocity: capa de viento dinámica
+let velocityLayer = null;
+
+function cargarCapaDeViento() {
+  fetch("https://backend-gps-zenodo.onrender.com/viento.json")
+    .then(res => res.json())
+    .then(data => {
+      if (velocityLayer) {
+        map.removeLayer(velocityLayer);
+      }
+
+      velocityLayer = L.velocityLayer({
+        displayValues: true,
+        displayOptions: {
+          velocityType: "Viento",
+          position: "bottomleft",
+          emptyString: "No hay datos de viento"
+        },
+        data: data.data,
+        maxVelocity: 15,
+        opacity: 0.7
+      });
+
+      map.addLayer(velocityLayer);
+    })
+    .catch(err => {
+      console.warn("⚠️ No se pudo cargar la capa de viento de Leaflet.Velocity:", err);
+    });
+}
+
+cargarCapaDeViento();
+setInterval(cargarCapaDeViento, 30 * 60 * 1000); // cada 30 minutos
 
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
