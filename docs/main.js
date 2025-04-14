@@ -5,24 +5,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-let windyAPIKey = null;
-
-fetch("https://backend-gps-zenodo.onrender.com/openweather-key")
-  .then(res => res.json())
-  .then(data => {
-    windyAPIKey = data.key;
-    if (windyAPIKey) {
-      L.tileLayer(`https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${windyAPIKey}`, {
-        attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>',
-        opacity: 0.5
-      }).addTo(map);
-    }
-  })
-  .catch(err => {
-    console.warn("⚠️ No se pudo cargar la capa de viento de OpenWeather:", err);
-  });
-
-// 🌬️ Leaflet.Velocity: capa de viento dinámica
+// Capa de viento con Leaflet.Velocity
 let velocityLayer = null;
 
 function cargarCapaDeViento() {
@@ -48,13 +31,14 @@ function cargarCapaDeViento() {
       map.addLayer(velocityLayer);
     })
     .catch(err => {
-      console.warn("⚠️ No se pudo cargar la capa de viento de Leaflet.Velocity:", err);
+      console.warn("⚠️ No se pudo cargar la capa de viento:", err);
     });
 }
 
 cargarCapaDeViento();
-setInterval(cargarCapaDeViento, 30 * 60 * 1000); // cada 30 minutos
+setInterval(cargarCapaDeViento, 30 * 60 * 1000); // cada 30 min
 
+// -------------------
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
@@ -170,7 +154,7 @@ function cargarHistorialDesdeGoogle() {
       lista.innerHTML = "";
 
       if (!Array.isArray(data)) {
-        console.warn("📭 El historial recibido no es un array:", data);
+        console.warn("🛍️ El historial recibido no es un array:", data);
         return;
       }
 
