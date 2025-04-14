@@ -175,7 +175,7 @@ def convertir_a_velocity(data):
         speed = velocidad[i]
         dir_deg = direccion[i]
 
-        # Convertimos a u/v (componente Este/Oeste y Norte/Sur)
+        # Convertimos dirección y velocidad en componentes u (este/oeste) y v (norte/sur)
         import math
         rad = math.radians(dir_deg)
         u = -speed * math.sin(rad)
@@ -183,8 +183,7 @@ def convertir_a_velocity(data):
         u_component.append(u)
         v_component.append(v)
 
-    # Solo mostramos el último dato (más reciente)
-    last_index = -1
+    # Creamos los objetos necesarios para Leaflet.Velocity con toda la serie de datos
     return {
         "data": [{
             "header": {
@@ -192,32 +191,33 @@ def convertir_a_velocity(data):
                 "parameterNumber": 2,
                 "parameterNumberName": "Eastward wind",
                 "parameterCategory": 2,
-                "nx": 1,
+                "nx": len(u_component),
                 "ny": 1,
                 "lo1": float(os.getenv("WIND_CENTER_LON", "2.19")),
                 "la1": float(os.getenv("WIND_CENTER_LAT", "41.37")),
                 "dx": 0.1,
                 "dy": 0.1,
-                "refTime": tiempos[last_index]
+                "refTime": tiempos[0]
             },
-            "data": [u_component[last_index]]
+            "data": u_component
         }, {
             "header": {
                 "parameterUnit": "m.s-1",
                 "parameterNumber": 3,
                 "parameterNumberName": "Northward wind",
                 "parameterCategory": 2,
-                "nx": 1,
+                "nx": len(v_component),
                 "ny": 1,
                 "lo1": float(os.getenv("WIND_CENTER_LON", "2.19")),
                 "la1": float(os.getenv("WIND_CENTER_LAT", "41.37")),
                 "dx": 0.1,
                 "dy": 0.1,
-                "refTime": tiempos[last_index]
+                "refTime": tiempos[0]
             },
-            "data": [v_component[last_index]]
+            "data": v_component
         }]
     }
+
 
 
 if __name__ == '__main__':
