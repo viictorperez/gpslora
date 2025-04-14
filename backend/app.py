@@ -169,25 +169,26 @@ def convertir_a_velocity(data):
     velocidad = data['hourly']['wind_speed_10m']
     direccion = data['hourly']['wind_direction_10m']
     tiempos = data['hourly']['time']
-    n = len(velocidad)
 
-    # Dimensiones para un grid ficticio (1D a lo largo del tiempo)
-    nx = n
+    # Simulamos una grilla de 1xN (una fila, muchas columnas)
+    nx = len(velocidad)
     ny = 1
 
     u_component = []
     v_component = []
 
-    for i in range(n):
+    for i in range(nx):
         speed = velocidad[i]
         dir_deg = direccion[i]
-
         rad = math.radians(dir_deg)
         u = -speed * math.sin(rad)
         v = -speed * math.cos(rad)
-
         u_component.append(u)
         v_component.append(v)
+
+    # ✅ Nos aseguramos que data sea de tamaño nx * ny
+    assert len(u_component) == nx * ny
+    assert len(v_component) == nx * ny
 
     base_header = {
         "parameterUnit": "m.s-1",
@@ -196,8 +197,8 @@ def convertir_a_velocity(data):
         "ny": ny,
         "lo1": float(os.getenv("WIND_CENTER_LON", "2.19")),
         "la1": float(os.getenv("WIND_CENTER_LAT", "41.37")),
-        "dx": 0.1,
-        "dy": 0.1,
+        "dx": 1.0,
+        "dy": 1.0,
         "refTime": tiempos[0]
     }
 
