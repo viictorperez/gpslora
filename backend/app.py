@@ -142,9 +142,83 @@ def borrar_historial():
         app.logger.exception("❌ Error al borrar historial")
         return jsonify({"error": "No se pudo borrar el historial", "detalle": str(e)}), 500
 
-@app.route('/openweather-key')
-def get_openweather_key():
-    return jsonify({ "key": os.getenv("OPENWEATHER_API_KEY") })
+@app.route('/viento.json')
+def viento_json():
+    try:
+        lat = os.getenv("WIND_CENTER_LAT", "41.37")
+        lon = os.getenv("WIND_CENTER_LON", "2.19")
+
+        # Llamada al API de open-meteo.com para datos de viento (gratuito)
+        url = f"https://api.open-meteo.com/v1/gfs?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m&forecast_days=1"
+        res = requests.get(url)
+        if res.status_code != 200:
+            return jsonify({"error": "No se pudo obtener viento"}), 500
+
+        data = res.json()
+        uvs = convertir_a_velocity(data)
+        return jsonify(uvs)
+
+    except Exception as e:
+        app.logger.exception("❌ Error generando datos de viento")
+        return jsonify({"error": str(e)}), 500
+
+# Función que convierte los datos de Open-Meteo al formato Leaflet.Velocity
+def convertir_a_velocity(data):
+    velocidad = data['hourly']['wind_speed_10m']
+    direccion = data['hourly']['wind_direction_10m']
+    tiempos = data['hourly']['time']
+
+    u_component = []
+    v_component = []
+
+    for i in range(len(velocidad)):
+        speed = velocidad[i]
+        dir_deg = direccion[i]
+
+        # Convertimos a u/v (componente Este/Oeste y Norte/Sur)
+        import math
+        rad = math.radians(dir_deg)
+        u = -speed * math.sin(rad)
+        v = -speed * math.cos(rad)
+        u_component.append(u)
+        v_component.append(v)
+
+    # Solo mostramos el último dato (más reciente)
+    last_index = -1
+    return {
+        "data": [{
+            "header": {
+                "parameterUnit": "m.s-1",
+                "parameterNumber": 2,
+                "parameterNumberName": "Eastward wind",
+                "parameterCategory": 2,
+                "nx": 1,
+                "ny": 1,
+                "lo1": float(os.getenv("WIND_CENTER_LON", "2.19")),
+                "la1": float(os.getenv("WIND_CENTER_LAT", "41.37")),
+                "dx": 0.1,
+                "dy": 0.1,
+                "refTime": tiempos[last_index]
+            },
+            "data": [u_component[last_index]]
+        }, {
+            "header": {
+                "parameterUnit": "m.s-1",
+                "parameterNumber": 3,
+                "parameterNumberName": "Northward wind",
+                "parameterCategory": 2,
+                "nx": 1,
+                "ny": 1,
+                "lo1": float(os.getenv("WIND_CENTER_LON", "2.19")),
+                "la1": float(os.getenv("WIND_CENTER_LAT", "41.37")),
+                "dx": 0.1,
+                "dy": 0.1,
+                "refTime": tiempos[last_index]
+            },
+            "data": [v_component[last_index]]
+        }]
+    }
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
