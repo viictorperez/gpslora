@@ -8,10 +8,35 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Capa de viento con Leaflet.Velocity
 let velocityLayer = null;
 
+function esValidoParaVelocity(data) {
+  try {
+    if (!data || !Array.isArray(data.data)) return false;
+    if (data.data.length !== 2) return false;
+
+    const u = data.data[0];
+    const v = data.data[1];
+
+    if (!u.data || !Array.isArray(u.data)) return false;
+    if (!v.data || !Array.isArray(v.data)) return false;
+
+    if (u.data.length !== v.data.length) return false;
+
+    return true;
+  } catch (e) {
+    console.warn("⚠️ Error validando datos de viento:", e);
+    return false;
+  }
+}
+
 function cargarCapaDeViento() {
   fetch("https://backend-gps-zenodo.onrender.com/viento.json")
     .then(res => res.json())
     .then(data => {
+      if (!esValidoParaVelocity(data)) {
+        console.warn("⚠️ Datos de viento no válidos para Leaflet.Velocity.");
+        return;
+      }
+
       if (velocityLayer) {
         map.removeLayer(velocityLayer);
       }
@@ -23,7 +48,7 @@ function cargarCapaDeViento() {
           position: "bottomleft",
           emptyString: "No hay datos de viento"
         },
-        data: data,
+        data: data.data,
         maxVelocity: 15,
         opacity: 0.7
       });
