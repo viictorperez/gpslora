@@ -10,16 +10,14 @@ let velocityLayer = null;
 
 function esValidoParaVelocity(data) {
   try {
-    if (!data || !Array.isArray(data.data)) return false;
-    if (data.data.length !== 2) return false;
+    if (!data || !data.data) return false;
+    if (!Array.isArray(data.data) || data.data.length !== 2) return false;
 
     const u = data.data[0];
     const v = data.data[1];
 
     if (!u.data || !Array.isArray(u.data)) return false;
     if (!v.data || !Array.isArray(v.data)) return false;
-
-    if (u.data.length !== v.data.length) return false;
 
     return true;
   } catch (e) {
@@ -32,6 +30,8 @@ function cargarCapaDeViento() {
   fetch("https://backend-gps-zenodo.onrender.com/viento.json")
     .then(res => res.json())
     .then(data => {
+      console.log("Datos de viento recibidos:", data);
+      
       if (!esValidoParaVelocity(data)) {
         console.warn("⚠️ Datos de viento no válidos para Leaflet.Velocity.");
         return;
@@ -46,24 +46,33 @@ function cargarCapaDeViento() {
         displayOptions: {
           velocityType: "Viento",
           position: "bottomleft",
-          emptyString: "No hay datos de viento"
+          emptyString: "No hay datos de viento",
+          displayPosition: "bottomleft",
+          displayEmptyString: "No hay datos de viento",
+          speedUnit: "m/s"
         },
-        data: data.data,
+        data: data,
         maxVelocity: 15,
-        opacity: 0.7
+        velocityScale: 0.01,
+        opacity: 0.8,
+        particleAge: 90,
+        particleMultiplier: 0.005,
+        frameRate: 20,
+        colorScale: ["rgb(255,255,255)", "rgb(100,150,255)", "rgb(50,50,255)"]
       });
 
       map.addLayer(velocityLayer);
+      console.log("Capa de viento añadida correctamente");
     })
     .catch(err => {
       console.warn("⚠️ No se pudo cargar la capa de viento:", err);
     });
 }
 
+// Cargar capa de viento al inicio y cada 30 minutos
 cargarCapaDeViento();
-setInterval(cargarCapaDeViento, 30 * 60 * 1000); // cada 30 min
+setInterval(cargarCapaDeViento, 30 * 60 * 1000);
 
-// -------------------
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
