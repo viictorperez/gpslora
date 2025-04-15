@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import pytz
+import math
 
 load_dotenv()
 
@@ -145,83 +146,70 @@ def borrar_historial():
 @app.route('/viento.json')
 def viento_json():
     try:
-        lat = os.getenv("WIND_CENTER_LAT", "41.37")
-        lon = os.getenv("WIND_CENTER_LON", "2.19")
-
-        # Llamada al API de open-meteo.com para datos de viento (gratuito)
-        url = f"https://api.open-meteo.com/v1/gfs?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m&forecast_days=1"
+        lat = float(os.getenv("WIND_CENTER_LAT", "41.37"))
+        lon = float(os.getenv("WIND_CENTER_LON", "2.19"))
+        
+        # Parámetros para crear una pequeña cuadrícula
+        grid_size = 0.2  # Tamaño de la cuadrícula en grados
+        points = 5       # Número de puntos en cada dirección
+        
+        # Generar coordenadas para la cuadrícula
+        lats = [lat + (i - points//2) * grid_size/points for i in range(points)]
+        lons = [lon + (i - points//2) * grid_size/points for i in range(points)]
+        
+        # Obtener datos de viento para el punto central
+        url = f"https://api.open-meteo.com/v1/gfs?latitude={lat}&longitude={lon}&hourly=u_component_of_wind_10m,v_component_of_wind_10m"
         res = requests.get(url)
         if res.status_code != 200:
             return jsonify({"error": "No se pudo obtener viento"}), 500
-
+        
         data = res.json()
-        uvs = convertir_a_velocity(data)
-        return jsonify(uvs)
-
-    except Exception as e:
-        app.logger.exception("❌ Error generando datos de viento")
-        return jsonify({"error": str(e)}), 500
-
-# Función que convierte los datos de Open-Meteo al formato Leaflet.Velocity
-def convertir_a_velocity(data):
-    import math
-
-    velocidad = data['hourly']['wind_speed_10m']
-    direccion = data['hourly']['wind_direction_10m']
-    tiempos = data['hourly']['time']
-
-    # Simulamos una grilla de 1xN (una fila, muchas columnas)
-    nx = len(velocidad)
-    ny = 1
-
-    u_component = []
-    v_component = []
-
-    for i in range(nx):
-        speed = velocidad[i]
-        dir_deg = direccion[i]
-        rad = math.radians(dir_deg)
-        u = -speed * math.sin(rad)
-        v = -speed * math.cos(rad)
-        u_component.append(u)
-        v_component.append(v)
-
-    # ✅ Nos aseguramos que data sea de tamaño nx * ny
-    assert len(u_component) == nx * ny
-    assert len(v_component) == nx * ny
-
-    base_header = {
-        "parameterUnit": "m.s-1",
-        "parameterCategory": 2,
-        "nx": nx,
-        "ny": ny,
-        "lo1": float(os.getenv("WIND_CENTER_LON", "2.19")),
-        "la1": float(os.getenv("WIND_CENTER_LAT", "41.37")),
-        "dx": 1.0,
-        "dy": 1.0,
-        "refTime": tiempos[0]
-    }
-
-    return {
-        "data": [
-            {
-                "header": {
-                    **base_header,
-                    "parameterNumber": 2,
-                    "parameterNumberName": "Eastward wind"
-                },
-                "data": u_component
+        u_value = data['hourly']['u_component_of_wind_10m'][0]
+        v_value = data['hourly']['v_component_of_wind_10m'][0]
+        
+        # Crear datos de viento para la cuadrícula (simulando variación)
+        u_data = []
+        v_data = []
+        for lat_point in lats:
+            for lon_point in lons:
+                # Simular variación en la cuadrícula
+                distance = math.sqrt((lat_point - lat)**2 + (lon_point - lon)**2)
+                variation = 1 + 0.2 * math.sin(distance * 10)
+                u_data.append(u_value * variation)
+                v_data.append(v_value * variation)
+        
+        return {
+            "header": {
+                "parameterUnit": "m.s-1",
+                "parameterNumber": 2,
+                "lo1": min(lons),
+                "la1": max(lats),
+                "dx": grid_size/points,
+                "dy": grid_size/points,
+                "nx": points,
+                "ny": points,
+                "refTime": datetime.datetime.now().isoformat()
             },
-            {
-                "header": {
-                    **base_header,
-                    "parameterNumber": 3,
-                    "parameterNumberName": "Northward wind"
+            "data": [
+                {
+                    "header": {
+                        "parameterNumberName": "U-component of wind",
+                        "parameterUnit": "m.s-1"
+                    },
+                    "data": u_data
                 },
-                "data": v_component
-            }
-        ]
-    }
+                {
+                    "header": {
+                        "parameterNumberName": "V-component of wind",
+                        "parameterUnit": "m.s-1"
+                    },
+                    "data": v_data
+                }
+            ]
+        }
+    except Exception as e:
+        logging.exception("❌ Error generando datos de viento")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
