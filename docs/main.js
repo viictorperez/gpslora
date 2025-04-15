@@ -29,9 +29,26 @@ function esValidoParaVelocity(data) {
 function cargarCapaDeViento() {
   fetch("https://backend-gps-zenodo.onrender.com/viento.json")
     .then(res => res.json())
-    .then(data => {
-      console.log("Datos de viento recibidos:", data);
+    .then(originalData => {
+      console.log("Datos originales:", originalData);
       
+      // Reestructurar los datos al formato correcto
+      const velocityData = {
+        header: originalData.header || {
+          parameterUnit: "m.s-1",
+          lo1: 2.09,
+          la1: 41.47,
+          dx: 0.1,
+          dy: 0.1,
+          nx: 3,
+          ny: 3,
+          refTime: new Date().toISOString()
+        },
+        data: originalData.data || []
+      };
+
+      console.log("Datos reformateados:", velocityData);
+
       if (velocityLayer) {
         map.removeLayer(velocityLayer);
       }
@@ -39,32 +56,35 @@ function cargarCapaDeViento() {
       velocityLayer = L.velocityLayer({
         displayValues: true,
         displayOptions: {
-          velocityType: "Viento",
+          velocityType: "Wind",
           position: "bottomleft",
-          emptyString: "No hay datos de viento",
+          emptyString: "No wind data",
+          displayPosition: "bottomleft",
+          displayEmptyString: "No wind data",
           speedUnit: "m/s"
         },
-        data: data,
-        maxVelocity: 15,  // Ajusta según tus datos
-        velocityScale: 0.01,  // Más pequeño = flechas más grandes
-        particleAge: 90,
-        particleMultiplier: 0.005,
-        colorScale: ["rgb(255,255,255)", "rgb(100,150,255)", "rgb(0,50,255)"],
-        opacity: 0.8
+        data: velocityData,  // Usamos los datos reformateados
+        maxVelocity: 15,
+        velocityScale: 0.05,  // Incrementado para mejor visibilidad
+        opacity: 0.9,
+        particleAge: 60,
+        particleMultiplier: 0.02
       });
 
       map.addLayer(velocityLayer);
-      console.log("Capa de viento añadida");
+      console.log("Capa de viento añadida correctamente");
       
-      // Centrar el mapa en la zona de viento
+      // Ajustar la vista al área de viento
       const bounds = L.latLngBounds(
-        [data.header.la1 - data.header.dy * data.header.ny, data.header.lo1],
-        [data.header.la1, data.header.lo1 + data.header.dx * data.header.nx]
+        [velocityData.header.la1 - (velocityData.header.dy * velocityData.header.ny), 
+         velocityData.header.lo1],
+        [velocityData.header.la1, 
+         velocityData.header.lo1 + (velocityData.header.dx * velocityData.header.nx)]
       );
       map.fitBounds(bounds);
     })
     .catch(err => {
-      console.error("Error cargando viento:", err);
+      console.error("Error loading wind data:", err);
     });
 }
 
