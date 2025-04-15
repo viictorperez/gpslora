@@ -32,11 +32,6 @@ function cargarCapaDeViento() {
     .then(data => {
       console.log("Datos de viento recibidos:", data);
       
-      if (!esValidoParaVelocity(data)) {
-        console.warn("⚠️ Datos de viento no válidos para Leaflet.Velocity.");
-        return;
-      }
-
       if (velocityLayer) {
         map.removeLayer(velocityLayer);
       }
@@ -47,25 +42,29 @@ function cargarCapaDeViento() {
           velocityType: "Viento",
           position: "bottomleft",
           emptyString: "No hay datos de viento",
-          displayPosition: "bottomleft",
-          displayEmptyString: "No hay datos de viento",
           speedUnit: "m/s"
         },
         data: data,
-        maxVelocity: 15,
-        velocityScale: 0.01,
-        opacity: 0.8,
+        maxVelocity: 15,  // Ajusta según tus datos
+        velocityScale: 0.01,  // Más pequeño = flechas más grandes
         particleAge: 90,
         particleMultiplier: 0.005,
-        frameRate: 20,
-        colorScale: ["rgb(255,255,255)", "rgb(100,150,255)", "rgb(50,50,255)"]
+        colorScale: ["rgb(255,255,255)", "rgb(100,150,255)", "rgb(0,50,255)"],
+        opacity: 0.8
       });
 
       map.addLayer(velocityLayer);
-      console.log("Capa de viento añadida correctamente");
+      console.log("Capa de viento añadida");
+      
+      // Centrar el mapa en la zona de viento
+      const bounds = L.latLngBounds(
+        [data.header.la1 - data.header.dy * data.header.ny, data.header.lo1],
+        [data.header.la1, data.header.lo1 + data.header.dx * data.header.nx]
+      );
+      map.fitBounds(bounds);
     })
     .catch(err => {
-      console.warn("⚠️ No se pudo cargar la capa de viento:", err);
+      console.error("Error cargando viento:", err);
     });
 }
 
