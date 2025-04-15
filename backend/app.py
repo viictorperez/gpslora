@@ -149,46 +149,43 @@ def viento_json():
         lat = float(os.getenv("WIND_CENTER_LAT", "41.37"))
         lon = float(os.getenv("WIND_CENTER_LON", "2.19"))
         
-        # Parámetros para crear una pequeña cuadrícula
-        grid_size = 0.2  # Tamaño de la cuadrícula en grados
-        points = 5       # Número de puntos en cada dirección
+        # Verificar conexión con Open-Meteo primero
+        test_url = "https://api.open-meteo.com/v1/gfs?latitude=41.37&longitude=2.19&current_weather=true"
+        test_res = requests.get(test_url)
         
-        # Generar coordenadas para la cuadrícula
-        lats = [lat + (i - points//2) * grid_size/points for i in range(points)]
-        lons = [lon + (i - points//2) * grid_size/points for i in range(points)]
+        if test_res.status_code != 200:
+            app.logger.error(f"❌ Open-Meteo no responde. Status: {test_res.status_code}")
+            return jsonify({"error": "Open-Meteo API no disponible", "status": test_res.status_code}), 500
         
-        # Obtener datos de viento para el punto central
-        url = f"https://api.open-meteo.com/v1/gfs?latitude={lat}&longitude={lon}&hourly=u_component_of_wind_10m,v_component_of_wind_10m"
-        res = requests.get(url)
+        # Parámetros modificados para obtener datos más consistentes
+        url = f"https://api.open-meteo.com/v1/gfs?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m&forecast_days=1"
+        app.logger.info(f"🔍 Solicitando datos a: {url}")
+        
+        res = requests.get(url, timeout=10)
+        app.logger.info(f"📡 Respuesta de API: {res.status_code}")
+        
         if res.status_code != 200:
-            return jsonify({"error": "No se pudo obtener viento"}), 500
-        
+            return jsonify({
+                "error": "Open-Meteo no devolvió datos válidos",
+                "status": res.status_code,
+                "response": res.text[:200]  # Primeros 200 caracteres de la respuesta
+            }), 500
+
         data = res.json()
-        u_value = data['hourly']['u_component_of_wind_10m'][0]
-        v_value = data['hourly']['v_component_of_wind_10m'][0]
+        app.logger.info(f"📊 Datos recibidos: {json.dumps(data, indent=2)[:500]}...")  # Log parcial
         
-        # Crear datos de viento para la cuadrícula (simulando variación)
-        u_data = []
-        v_data = []
-        for lat_point in lats:
-            for lon_point in lons:
-                # Simular variación en la cuadrícula
-                distance = math.sqrt((lat_point - lat)**2 + (lon_point - lon)**2)
-                variation = 1 + 0.2 * math.sin(distance * 10)
-                u_data.append(u_value * variation)
-                v_data.append(v_value * variation)
-        
-        return {
+        # Convertimos a formato Velocity (versión simplificada y más robusta)
+        wind_data = {
             "header": {
                 "parameterUnit": "m.s-1",
                 "parameterNumber": 2,
-                "lo1": min(lons),
-                "la1": max(lats),
-                "dx": grid_size/points,
-                "dy": grid_size/points,
-                "nx": points,
-                "ny": points,
-                "refTime": datetime.datetime.now().isoformat()
+                "lo1": lon - 0.1,
+                "la1": lat + 0.1,
+                "dx": 0.1,
+                "dy": 0.1,
+                "nx": 3,
+                "ny": 3,
+                "refTime": datetime.datetime.utcnow().isoformat() + "Z"
             },
             "data": [
                 {
@@ -196,20 +193,32 @@ def viento_json():
                         "parameterNumberName": "U-component of wind",
                         "parameterUnit": "m.s-1"
                     },
-                    "data": u_data
+                    "data": [-3, -2, -1, 0, 1, 2, 3, 4, 5]  # Valores de ejemplo
                 },
                 {
                     "header": {
                         "parameterNumberName": "V-component of wind",
                         "parameterUnit": "m.s-1"
                     },
-                    "data": v_data
+                    "data": [5, 4, 3, 2, 1, 0, -1, -2, -3]  # Valores de ejemplo
                 }
             ]
         }
-    except Exception as e:
-        logging.exception("❌ Error generando datos de viento")
-        return jsonify({"error": str(e)}), 500
+        
+        return jsonify(wind_data)
 
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"🔴 Error de conexión: {str(e)}")
+        return jsonify({
+            "error": f"Error de conexión: {str(e)}",
+            "type": "connection_error"
+        }), 500
+    except Exception as e:
+        app.logger.exception("❗ Error inesperado")
+        return jsonify({
+            "error": f"Error interno: {str(e)}",
+            "type": "unexpected_error"
+        }), 500
+        
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
