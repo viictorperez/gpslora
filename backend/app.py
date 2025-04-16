@@ -149,77 +149,80 @@ def viento_json():
         lat = float(os.getenv("WIND_CENTER_LAT", "41.37"))
         lon = float(os.getenv("WIND_CENTER_LON", "2.19"))
         
-        # 1. Obtener datos de la API
-        url = f"https://api.open-meteo.com/v1/gfs?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m&forecast_days=1"
+        url = (
+            f"https://api.open-meteo.com/v1/gfs?"
+            f"latitude={lat}&longitude={lon}"
+            f"&hourly=wind_speed_10m,wind_direction_10m&forecast_days=1"
+        )
         res = requests.get(url)
-        
         if res.status_code != 200:
             return jsonify({"error": "No se pudo obtener viento"}), 500
 
         data = res.json()
-        
-        # 2. Convertir a formato de cuadrícula que Leaflet.Velocity entiende
-        wind_speeds = data['hourly']['wind_speed_10m']  # en km/h
-        wind_directions = data['hourly']['wind_direction_10m']  # en grados
-        
-        # Convertir velocidad a m/s (1 km/h = 0.277778 m/s)
-        wind_speeds_ms = [speed * 0.277778 for speed in wind_speeds]
-        
-        # 3. Crear una pequeña cuadrícula alrededor del punto central
-        grid_size = 0.2  # Tamaño en grados
-        grid_points = 3   # Puntos en cada dirección
-        
-        # Componentes U (este-oeste) y V (norte-sur)
+        velocidades = data['hourly']['wind_speed_10m']
+        direcciones = data['hourly']['wind_direction_10m']
+        tiempo = data['hourly']['time'][0]  # Usamos el primer timestamp
+
+        # Creamos una cuadrícula de 3x3 alrededor del centro
+        nx = ny = 3
+        grid_size = 0.2
+        dx = dy = grid_size / nx
         u_data = []
         v_data = []
-        
-        for speed, direction in zip(wind_speeds_ms, wind_directions):
-            # Convertir dirección y velocidad a componentes U/V
-            rad = math.radians(direction)
-            u = -speed * math.sin(rad)  # Componente este-oeste
-            v = -speed * math.cos(rad)  # Componente norte-sur
-            
-            # Para crear una cuadrícula, repetimos los valores
-            for _ in range(grid_points * grid_points):
-                u_data.append(u)
-                v_data.append(v)
-        
-        # 4. Estructurar los datos en formato Velocity
+
+        # Usamos solo el valor más reciente para simular la cuadrícula
+        speed = velocidades[-1] * 0.277778  # km/h a m/s
+        direction = direcciones[-1]
+        rad = math.radians(direction)
+        u = -speed * math.sin(rad)
+        v = -speed * math.cos(rad)
+
+        u_data = [u] * (nx * ny)
+        v_data = [v] * (nx * ny)
+
+        # Formato compatible con Leaflet.Velocity
         wind_data = {
-            "header": {
-                "parameterUnit": "m.s-1",
-                "parameterNumber": 2,
-                "lo1": lon - grid_size/2,
-                "la1": lat + grid_size/2,
-                "dx": grid_size/grid_points,
-                "dy": grid_size/grid_points,
-                "nx": grid_points,
-                "ny": grid_points,
-                "refTime": data['hourly']['time'][0]  # Usa el primer timestamp
-            },
             "data": [
                 {
                     "header": {
+                        "parameterUnit": "m.s-1",
+                        "parameterNumber": 2,
                         "parameterNumberName": "U-component of wind",
-                        "parameterUnit": "m.s-1"
+                        "parameterCategory": 2,
+                        "nx": nx,
+                        "ny": ny,
+                        "lo1": lon - grid_size / 2,
+                        "la1": lat + grid_size / 2,
+                        "dx": dx,
+                        "dy": dy,
+                        "refTime": tiempo
                     },
                     "data": u_data
                 },
                 {
                     "header": {
+                        "parameterUnit": "m.s-1",
+                        "parameterNumber": 3,
                         "parameterNumberName": "V-component of wind",
-                        "parameterUnit": "m.s-1"
+                        "parameterCategory": 2,
+                        "nx": nx,
+                        "ny": ny,
+                        "lo1": lon - grid_size / 2,
+                        "la1": lat + grid_size / 2,
+                        "dx": dx,
+                        "dy": dy,
+                        "refTime": tiempo
                     },
                     "data": v_data
                 }
             ]
         }
-        
+
         return jsonify(wind_data)
-        
+
     except Exception as e:
-        logging.error(f"Error generando datos de viento: {str(e)}")
+        logging.exception("❌ Error generando datos de viento")
         return jsonify({"error": str(e)}), 500
-        
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
