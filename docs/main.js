@@ -38,12 +38,13 @@ function cargarCapaDeViento() {
         },
         data: data.data,
         maxVelocity: 15,
-        velocityScale: 0.005,      // Más bajo = líneas más suaves
-        particleAge: 90,           // Dura más tiempo en pantalla
-        lineWidth: 1,              // Líneas más finas
-        particleMultiplier: 0.5,   // Menos partículas
-        opacity: 0.6               // Un poco más transparente
+        velocityScale: 0.002,         // Escala más baja → movimiento más lento y fluido
+        particleAge: 120,             // Mayor duración de cada línea
+        lineWidth: 0.8,               // Líneas más finas
+        particleMultiplier: 0.1,      // Muchísimas menos partículas (baja densidad)
+        opacity: 0.5                  // Más transparente
       });
+
 
 
       map.addLayer(velocityLayer);
