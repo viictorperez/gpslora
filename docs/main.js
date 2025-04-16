@@ -14,32 +14,33 @@ function cargarCapaDeViento() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     })
-    .then(apiData => {
-      if (!apiData || !Array.isArray(apiData.data) || apiData.data.length !== 2) {
-        throw new Error("Datos de viento no válidos");
-      }
-
+    .then(data => {
       if (velocityLayer) {
         map.removeLayer(velocityLayer);
       }
-
+  
       velocityLayer = L.velocityLayer({
         displayValues: true,
         displayOptions: {
-          velocityType: "Viento",
+          velocityType: "Wind",
           position: "bottomleft",
-          emptyString: "No hay datos de viento"
+          emptyString: "No hay datos de viento",
+          speedUnit: "m/s"
         },
         data: data.data,
         maxVelocity: 15,
+        velocityScale: 0.03,
+        particleAge: 50,
         opacity: 0.7
       });
-
+  
       map.addLayer(velocityLayer);
+      console.log("✅ Viento actualizado");
     })
     .catch(err => {
       console.warn("⚠️ No se pudo cargar la capa de viento:", err);
     });
+
 }
 
 cargarCapaDeViento();
