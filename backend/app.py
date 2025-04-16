@@ -148,27 +148,28 @@ def viento_json():
     try:
         center_lat = float(os.getenv("WIND_CENTER_LAT", "41.37"))
         center_lon = float(os.getenv("WIND_CENTER_LON", "2.19"))
+        grid_size = 0.4
+        grid_points = 5
 
-        grid_size = 5  # 5x5 puntos
-        spacing = 0.1  # Grados entre puntos
+        lat_start = center_lat - grid_size / 2
+        lon_start = center_lon - grid_size / 2
 
-        # Limites de la cuadrícula
-        lats = [center_lat + spacing * (i - grid_size // 2) for i in range(grid_size)]
-        lons = [center_lon + spacing * (j - grid_size // 2) for j in range(grid_size)]
+        latitudes = [lat_start + i * (grid_size / (grid_points - 1)) for i in range(grid_points)]
+        longitudes = [lon_start + j * (grid_size / (grid_points - 1)) for j in range(grid_points)]
 
         u_data = []
         v_data = []
 
-        for lat in lats:
-            for lon in lons:
+        for lat in latitudes:
+            for lon in longitudes:
                 url = f"https://api.open-meteo.com/v1/gfs?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m&forecast_days=1"
                 res = requests.get(url)
                 if res.status_code != 200:
-                    raise Exception(f"Error al obtener datos para ({lat}, {lon})")
+                    raise Exception(f"Error obteniendo datos para {lat},{lon}")
 
-                data = res.json()
-                speed = data['hourly']['wind_speed_10m'][0] * 0.277778  # m/s
-                direction = data['hourly']['wind_direction_10m'][0]  # grados
+                weather = res.json()
+                speed = weather['hourly']['wind_speed_10m'][0] * 0.277778  # km/h -> m/s
+                direction = weather['hourly']['wind_direction_10m'][0]
 
                 rad = math.radians(direction)
                 u = -speed * math.sin(rad)
@@ -177,43 +178,49 @@ def viento_json():
                 u_data.append(u)
                 v_data.append(v)
 
-        header = {
+        ref_time = weather['hourly']['time'][0]
+
+        header_common = {
             "parameterUnit": "m.s-1",
-            "parameterNumber": 2,
-            "lo1": lons[0],
-            "la1": lats[0],
-            "dx": spacing,
-            "dy": spacing,
-            "nx": grid_size,
-            "ny": grid_size,
-            "refTime": datetime.datetime.utcnow().replace(microsecond=0).isoformat()
+            "lo1": round(lon_start, 2),
+            "la1": round(lat_start + grid_size, 2),
+            "dx": grid_size / (grid_points - 1),
+            "dy": grid_size / (grid_points - 1),
+            "nx": grid_points,
+            "ny": grid_points,
+            "refTime": ref_time
         }
 
         wind_data = {
-            "header": header,
             "data": [
                 {
                     "header": {
+                        **header_common,
+                        "parameterNumber": 2,
                         "parameterNumberName": "U-component of wind",
-                        "parameterUnit": "m.s-1"
+                        "parameterCategory": 2
                     },
                     "data": u_data
                 },
                 {
                     "header": {
+                        **header_common,
+                        "parameterNumber": 3,
                         "parameterNumberName": "V-component of wind",
-                        "parameterUnit": "m.s-1"
+                        "parameterCategory": 2
                     },
                     "data": v_data
                 }
-            ]
+            ],
+            "header": header_common  # opcional, útil para debug
         }
 
         return jsonify(wind_data)
 
     except Exception as e:
-        logging.exception("❌ Error generando datos de viento para malla")
+        logging.error(f"Error generando datos de viento: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
