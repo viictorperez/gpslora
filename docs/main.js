@@ -9,20 +9,22 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let velocityLayer = null;
 
 function cargarCapaDeViento() {
+  console.log("⏳ Cargando capa de viento...");
+  
   fetch("https://backend-gps-zenodo.onrender.com/viento.json")
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     })
     .then(data => {
+      console.log("✅ Respuesta de viento recibida:", data);
+
       if (!data || !data.data || !Array.isArray(data.data)) {
-        console.warn("❌ Datos de viento mal formateados:", data);
+        console.warn("❌ Datos inválidos de viento:", data);
         return;
       }
 
-      if (velocityLayer) {
-        map.removeLayer(velocityLayer);
-      }
+      if (velocityLayer) map.removeLayer(velocityLayer);
 
       velocityLayer = L.velocityLayer({
         displayValues: true,
@@ -40,13 +42,11 @@ function cargarCapaDeViento() {
       });
 
       map.addLayer(velocityLayer);
-      console.log("✅ Capa de viento actualizada");
     })
     .catch(err => {
       console.warn("⚠️ No se pudo cargar la capa de viento:", err);
     });
 }
-
 
 cargarCapaDeViento();
 setInterval(cargarCapaDeViento, 30 * 60 * 1000); // cada 30 min
