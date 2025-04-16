@@ -15,10 +15,15 @@ function cargarCapaDeViento() {
       return res.json();
     })
     .then(data => {
+      if (!data || !data.data || !Array.isArray(data.data)) {
+        console.warn("❌ Datos de viento mal formateados:", data);
+        return;
+      }
+
       if (velocityLayer) {
         map.removeLayer(velocityLayer);
       }
-  
+
       velocityLayer = L.velocityLayer({
         displayValues: true,
         displayOptions: {
@@ -33,15 +38,15 @@ function cargarCapaDeViento() {
         particleAge: 50,
         opacity: 0.7
       });
-  
+
       map.addLayer(velocityLayer);
-      console.log("✅ Viento actualizado");
+      console.log("✅ Capa de viento actualizada");
     })
     .catch(err => {
       console.warn("⚠️ No se pudo cargar la capa de viento:", err);
     });
-
 }
+
 
 cargarCapaDeViento();
 setInterval(cargarCapaDeViento, 30 * 60 * 1000); // cada 30 min
