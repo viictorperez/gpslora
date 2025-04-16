@@ -29,63 +29,129 @@ function esValidoParaVelocity(data) {
 function cargarCapaDeViento() {
   fetch("https://backend-gps-zenodo.onrender.com/viento.json")
     .then(res => res.json())
-    .then(originalData => {
-      console.log("Datos originales:", originalData);
-      
-      // Reestructurar los datos al formato correcto
+    .then(apiData => {
+      console.log("Datos crudos de la API:", apiData);
+
+      // 1. Convertir a formato compatible con Leaflet-Velocity
       const velocityData = {
-        header: originalData.header || {
+        header: {
           parameterUnit: "m.s-1",
-          lo1: 2.09,
-          la1: 41.47,
-          dx: 0.1,
-          dy: 0.1,
-          nx: 3,
-          ny: 3,
-          refTime: new Date().toISOString()
+          lo1: apiData.header?.lo1 || 2.09,
+          la1: apiData.header?.la1 || 41.47,
+          dx: apiData.header?.dx || 0.1,
+          dy: apiData.header?.dy || 0.1,
+          nx: apiData.header?.nx || 3,
+          ny: apiData.header?.ny || 3,
+          refTime: apiData.header?.refTime || new Date().toISOString()
         },
-        data: originalData.data || []
+        data: [
+          {
+            header: {
+              parameterNumberName: "U-component of wind",
+              parameterUnit: "m.s-1"
+            },
+            data: Array.isArray(apiData.data?.[0]?.data) ? 
+                  apiData.data[0].data : 
+                  new Array(9).fill(0) // Datos de ejemplo si no hay
+          },
+          {
+            header: {
+              parameterNumberName: "V-component of wind",
+              parameterUnit: "m.s-1"
+            },
+            data: Array.isArray(apiData.data?.[1]?.data) ? 
+                  apiData.data[1].data : 
+                  new Array(9).fill(0) // Datos de ejemplo si no hay
+          }
+        ]
       };
 
-      console.log("Datos reformateados:", velocityData);
+      console.log("Datos convertidos:", velocityData);
 
+      // 2. Eliminar capa anterior si existe
       if (velocityLayer) {
         map.removeLayer(velocityLayer);
       }
 
+      // 3. Configuración optimizada
       velocityLayer = L.velocityLayer({
         displayValues: true,
         displayOptions: {
           velocityType: "Wind",
           position: "bottomleft",
           emptyString: "No wind data",
-          displayPosition: "bottomleft",
-          displayEmptyString: "No wind data",
           speedUnit: "m/s"
         },
-        data: velocityData,  // Usamos los datos reformateados
+        data: velocityData,
         maxVelocity: 15,
-        velocityScale: 0.05,  // Incrementado para mejor visibilidad
+        velocityScale: 0.03,
         opacity: 0.9,
-        particleAge: 60,
-        particleMultiplier: 0.02
+        particleAge: 45,
+        particleMultiplier: 0.03,
+        colorScale: ["#FFFFFF", "#00AAFF", "#0000FF"]
       });
 
+      // 4. Añadir al mapa
       map.addLayer(velocityLayer);
-      console.log("Capa de viento añadida correctamente");
-      
-      // Ajustar la vista al área de viento
+      console.log("Capa de viento añadida con éxito");
+
+      // 5. Ajustar vista
       const bounds = L.latLngBounds(
-        [velocityData.header.la1 - (velocityData.header.dy * velocityData.header.ny), 
+        [velocityData.header.la1 - velocityData.header.dy * velocityData.header.ny, 
          velocityData.header.lo1],
         [velocityData.header.la1, 
-         velocityData.header.lo1 + (velocityData.header.dx * velocityData.header.nx)]
+         velocityData.header.lo1 + velocityData.header.dx * velocityData.header.nx]
       );
       map.fitBounds(bounds);
+
     })
     .catch(err => {
-      console.error("Error loading wind data:", err);
+      console.error("Error al cargar viento:", err);
+      // Mostrar datos de prueba si hay error
+      mostrarDatosDePrueba();
     });
+}
+
+// Función de respaldo con datos mock
+function mostrarDatosDePrueba() {
+  const testData = {
+    header: {
+      parameterUnit: "m.s-1",
+      lo1: 2.09,
+      la1: 41.47,
+      dx: 0.1,
+      dy: 0.1,
+      nx: 3,
+      ny: 3,
+      refTime: new Date().toISOString()
+    },
+    data: [
+      {
+        header: {
+          parameterNumberName: "U-component of wind",
+          parameterUnit: "m.s-1"
+        },
+        data: [-3, -1, 0, 1, 2, 3, 2, 1, 0]
+      },
+      {
+        header: {
+          parameterNumberName: "V-component of wind",
+          parameterUnit: "m.s-1"
+        },
+        data: [2, 3, 4, 3, 2, 1, 0, -1, -2]
+      }
+    ]
+  };
+
+  velocityLayer = L.velocityLayer({
+    displayValues: true,
+    data: testData,
+    velocityScale: 0.05,
+    maxVelocity: 5
+  });
+
+  map.addLayer(velocityLayer);
+  console.warn("Usando datos de prueba");
 }
 
 // Cargar capa de viento al inicio y cada 30 minutos
