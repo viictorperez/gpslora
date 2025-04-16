@@ -42,6 +42,10 @@ function cargarCapaDeViento() {
       });
 
       map.addLayer(velocityLayer);
+      // Mostrar hora del viento en el control
+      const refTime = data.header?.refTime || new Date().toISOString();
+      document.getElementById("info-viento").innerText = `💨 Viento actualizado: ${refTime} UTC`;
+
     })
     .catch(err => {
       console.warn("⚠️ No se pudo cargar la capa de viento:", err);
