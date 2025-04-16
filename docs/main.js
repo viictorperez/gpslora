@@ -1,8 +1,10 @@
 // Inicializar el mapa
 let map = L.map('map').setView([41.37, 2.19], 13);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19
 }).addTo(map);
 
 // Capa de viento con Leaflet.Velocity
@@ -36,10 +38,13 @@ function cargarCapaDeViento() {
         },
         data: data.data,
         maxVelocity: 15,
-        velocityScale: 0.03,
-        particleAge: 50,
-        opacity: 0.7
+        velocityScale: 0.005,      // Más bajo = líneas más suaves
+        particleAge: 90,           // Dura más tiempo en pantalla
+        lineWidth: 1,              // Líneas más finas
+        particleMultiplier: 0.5,   // Menos partículas
+        opacity: 0.6               // Un poco más transparente
       });
+
 
       map.addLayer(velocityLayer);
       // Mostrar hora del viento en el control
