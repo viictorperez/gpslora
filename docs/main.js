@@ -1,8 +1,8 @@
 // Inicializar el mapa
 let map = L.map('map').setView([41.37, 2.19], 13);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://carto.com/">Carto</a>',
   subdomains: 'abcd',
   maxZoom: 19
 }).addTo(map);
@@ -31,19 +31,20 @@ function cargarCapaDeViento() {
       velocityLayer = L.velocityLayer({
         displayValues: true,
         displayOptions: {
-          velocityType: "Wind",
+          velocityType: "Viento",
           position: "bottomleft",
           emptyString: "No hay datos de viento",
           speedUnit: "m/s"
         },
         data: data.data,
         maxVelocity: 15,
-        velocityScale: 0.002,         // Escala más baja → movimiento más lento y fluido
-        particleAge: 120,             // Mayor duración de cada línea
-        lineWidth: 0.8,               // Líneas más finas
-        particleMultiplier: 0.1,      // Muchísimas menos partículas (baja densidad)
-        opacity: 0.5                  // Más transparente
+        velocityScale: 0.01,            // ↓ esto controla lo "suave"
+        particleAge: 40,                // ↓ esto reduce la duración
+        lineWidth: 1,                   // ↓ esto reduce el grosor
+        colorScale: ["#2c7bb6", "#abd9e9", "#ffffbf", "#fdae61", "#d7191c"],
+        opacity: 0.2                    // ↓ más transparencia
       });
+
 
 
 
