@@ -30,7 +30,7 @@ function cargarCapaDeViento() {
           position: "bottomleft",
           emptyString: "No hay datos de viento"
         },
-        data: apiData.data,
+        data: data.data,
         maxVelocity: 15,
         opacity: 0.7
       });
