@@ -146,72 +146,63 @@ def borrar_historial():
 @app.route('/viento.json')
 def viento_json():
     try:
-        lat = float(os.getenv("WIND_CENTER_LAT", "41.37"))
-        lon = float(os.getenv("WIND_CENTER_LON", "2.19"))
-        
-        url = (
-            f"https://api.open-meteo.com/v1/gfs?"
-            f"latitude={lat}&longitude={lon}"
-            f"&hourly=wind_speed_10m,wind_direction_10m&forecast_days=1"
-        )
-        res = requests.get(url)
-        if res.status_code != 200:
-            return jsonify({"error": "No se pudo obtener viento"}), 500
+        center_lat = float(os.getenv("WIND_CENTER_LAT", "41.37"))
+        center_lon = float(os.getenv("WIND_CENTER_LON", "2.19"))
 
-        data = res.json()
-        velocidades = data['hourly']['wind_speed_10m']
-        direcciones = data['hourly']['wind_direction_10m']
-        tiempo = data['hourly']['time'][0]  # Usamos el primer timestamp
+        grid_size = 5  # 5x5 puntos
+        spacing = 0.1  # Grados entre puntos
 
-        # Creamos una cuadrícula de 3x3 alrededor del centro
-        nx = ny = 3
-        grid_size = 0.2
-        dx = dy = grid_size / nx
+        # Limites de la cuadrícula
+        lats = [center_lat + spacing * (i - grid_size // 2) for i in range(grid_size)]
+        lons = [center_lon + spacing * (j - grid_size // 2) for j in range(grid_size)]
+
         u_data = []
         v_data = []
 
-        # Usamos solo el valor más reciente para simular la cuadrícula
-        speed = velocidades[-1] * 0.277778  # km/h a m/s
-        direction = direcciones[-1]
-        rad = math.radians(direction)
-        u = -speed * math.sin(rad)
-        v = -speed * math.cos(rad)
+        for lat in lats:
+            for lon in lons:
+                url = f"https://api.open-meteo.com/v1/gfs?latitude={lat}&longitude={lon}&hourly=wind_speed_10m,wind_direction_10m&forecast_days=1"
+                res = requests.get(url)
+                if res.status_code != 200:
+                    raise Exception(f"Error al obtener datos para ({lat}, {lon})")
 
-        u_data = [u] * (nx * ny)
-        v_data = [v] * (nx * ny)
+                data = res.json()
+                speed = data['hourly']['wind_speed_10m'][0] * 0.277778  # m/s
+                direction = data['hourly']['wind_direction_10m'][0]  # grados
 
-        # Formato compatible con Leaflet.Velocity
+                rad = math.radians(direction)
+                u = -speed * math.sin(rad)
+                v = -speed * math.cos(rad)
+
+                u_data.append(u)
+                v_data.append(v)
+
+        header = {
+            "parameterUnit": "m.s-1",
+            "parameterNumber": 2,
+            "lo1": lons[0],
+            "la1": lats[0],
+            "dx": spacing,
+            "dy": spacing,
+            "nx": grid_size,
+            "ny": grid_size,
+            "refTime": datetime.datetime.utcnow().replace(microsecond=0).isoformat()
+        }
+
         wind_data = {
+            "header": header,
             "data": [
                 {
                     "header": {
-                        "parameterUnit": "m.s-1",
-                        "parameterNumber": 2,
                         "parameterNumberName": "U-component of wind",
-                        "parameterCategory": 2,
-                        "nx": nx,
-                        "ny": ny,
-                        "lo1": lon - grid_size / 2,
-                        "la1": lat + grid_size / 2,
-                        "dx": dx,
-                        "dy": dy,
-                        "refTime": tiempo
+                        "parameterUnit": "m.s-1"
                     },
                     "data": u_data
                 },
                 {
                     "header": {
-                        "parameterUnit": "m.s-1",
-                        "parameterNumber": 3,
                         "parameterNumberName": "V-component of wind",
-                        "parameterCategory": 2,
-                        "nx": nx,
-                        "ny": ny,
-                        "lo1": lon - grid_size / 2,
-                        "la1": lat + grid_size / 2,
-                        "dx": dx,
-                        "dy": dy,
-                        "refTime": tiempo
+                        "parameterUnit": "m.s-1"
                     },
                     "data": v_data
                 }
@@ -221,7 +212,7 @@ def viento_json():
         return jsonify(wind_data)
 
     except Exception as e:
-        logging.exception("❌ Error generando datos de viento")
+        logging.exception("❌ Error generando datos de viento para malla")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
