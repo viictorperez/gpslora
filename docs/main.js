@@ -1,10 +1,8 @@
 // Inicializar el mapa
 let map = L.map('map').setView([41.37, 2.19], 13);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://carto.com/">Carto</a>',
-  subdomains: 'abcd',
-  maxZoom: 19
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
 }).addTo(map);
 
 // Capa de viento con Leaflet.Velocity
