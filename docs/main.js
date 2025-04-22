@@ -1,4 +1,4 @@
-// Inicializar el mapa
+""// Inicializar el mapa
 let map = L.map('map').setView([41.37, 2.19], 13);
 
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -10,7 +10,7 @@ let velocityLayer = null;
 
 function cargarCapaDeViento() {
   console.log("⏳ Cargando capa de viento...");
-  
+
   fetch("https://backend-gps-zenodo.onrender.com/viento.json")
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -36,21 +36,16 @@ function cargarCapaDeViento() {
         },
         data: data.data,
         maxVelocity: 15,
-        velocityScale: 0.01,            // ↓ esto controla lo "suave"
-        particleAge: 40,                // ↓ esto reduce la duración
-        lineWidth: 1,                   // ↓ esto reduce el grosor
+        velocityScale: 0.01,
+        particleAge: 40,
+        lineWidth: 1,
         colorScale: ["#2c7bb6", "#abd9e9", "#ffffbf", "#fdae61", "#d7191c"],
-        opacity: 0.2                    // ↓ más transparencia
+        opacity: 0.2
       });
 
-
-
-
       map.addLayer(velocityLayer);
-      // Mostrar hora del viento en el control
       const refTime = data.header?.refTime || new Date().toISOString();
       document.getElementById("info-viento").innerText = `💨 Viento actualizado: ${refTime} UTC`;
-
     })
     .catch(err => {
       console.warn("⚠️ No se pudo cargar la capa de viento:", err);
@@ -58,9 +53,8 @@ function cargarCapaDeViento() {
 }
 
 cargarCapaDeViento();
-setInterval(cargarCapaDeViento, 30 * 60 * 1000); // cada 30 min
+setInterval(cargarCapaDeViento, 30 * 60 * 1000);
 
-// -------------------
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
@@ -70,6 +64,8 @@ let animationInterval = null;
 let animationIndex = 0;
 let animationLine = [];
 let animationSpeed = 500;
+
+const perfilesCTD = {};
 
 const fileInput = document.getElementById("fileInput");
 
@@ -84,7 +80,31 @@ fileInput.addEventListener("change", (event) => {
   });
 
   Array.from(files).forEach(file => {
+    const nombre = file.name.toLowerCase();
     const reader = new FileReader();
+
+    if (nombre.endsWith('.csv') && nombre.includes('punto')) {
+      const match = nombre.match(/punto[_\- ]?(\d+)/);
+      if (match) {
+        const puntoId = match[1];
+        reader.onload = function (e) {
+          const lineas = e.target.result.trim().split('\n');
+          const encabezado = lineas[0].split(',');
+          const perfil = lineas.slice(1).map(linea => {
+            const valores = linea.split(',');
+            const obj = {};
+            encabezado.forEach((col, i) => {
+              obj[col.trim()] = parseFloat(valores[i]);
+            });
+            return obj;
+          });
+          perfilesCTD[puntoId] = perfil;
+        };
+        reader.readAsText(file);
+        return;
+      }
+    }
+
     reader.onload = function (e) {
       const contenido = e.target.result.trim();
       const lineas = contenido.split('\n').slice(1);
@@ -103,13 +123,20 @@ fileInput.addEventListener("change", (event) => {
         if (!isNaN(punto.lat) && !isNaN(punto.lon)) {
           puntos.push(punto);
 
-          L.circleMarker([punto.lat, punto.lon], {
+          const marker = L.circleMarker([punto.lat, punto.lon], {
             radius: 4,
             color: color,
             fillOpacity: 0.8
-          })
-          .bindPopup(`<strong>📍 Punto ID:</strong> ${punto.id}<br><b>Lat:</b> ${punto.lat}<br><b>Lon:</b> ${punto.lon}`)
-          .addTo(map);
+          }).addTo(map);
+
+          let popupHTML = `<strong>📍 Punto ID:</strong> ${punto.id}<br><b>Lat:</b> ${punto.lat}<br><b>Lon:</b> ${punto.lon}`;
+
+          if (perfilesCTD[punto.id]) {
+            popupHTML += `<br><button onclick=\"mostrarPerfil('${punto.id}')\">📊 Ver perfil CTD</button>`;
+            window[`perfil_${punto.id}`] = perfilesCTD[punto.id];
+          }
+
+          marker.bindPopup(popupHTML);
         }
       });
 
@@ -130,6 +157,27 @@ fileInput.addEventListener("change", (event) => {
 
   fileInput.value = "";
 });
+
+function mostrarPerfil(id) {
+  const datos = window[`perfil_${id}`];
+  if (!datos) return;
+
+  let tabla = "<table border='1' style='font-size: 12px; border-collapse: collapse'>";
+  tabla += "<tr><th>Prof (m)</th><th>Temp (°C)</th><th>Salinidad</th><th>Densidad</th></tr>";
+
+  datos.slice(0, 10).forEach(row => {
+    tabla += `<tr>
+      <td>${row["Depth (Meter)"]?.toFixed(1) || "-"}</td>
+      <td>${row["Temperature (Celsius)"]?.toFixed(2) || "-"}</td>
+      <td>${row["Salinity (Practical Salinity Scale)"]?.toFixed(2) || "-"}</td>
+      <td>${row["Density (Kilograms per Cubic Meter)"]?.toFixed(2) || "-"}</td>
+    </tr>`;
+  });
+
+  tabla += "</table>";
+  const ventana = window.open("", "_blank", "width=400,height=400");
+  ventana.document.write(`<h3>Perfil CTD del punto ${id}</h3>${tabla}`);
+}
 
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
@@ -184,7 +232,7 @@ function cargarHistorialDesdeGoogle() {
 
       ordenado.forEach(item => {
         const li = document.createElement("li");
-        li.innerHTML = `<a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${item.fecha}`;
+        li.innerHTML = <a href="${item.enlace}" target="_blank">${item.nombre}</a> — ${item.fecha};
         lista.appendChild(li);
       });
     })
@@ -257,7 +305,7 @@ function startAnimation() {
       fillOpacity: 0.8
     }).addTo(map);
 
-    marker.bindPopup(`<strong>📍 Punto ID:</strong> ${punto.id}<br><b>Lat:</b> ${punto.lat}<br><b>Lon:</b> ${punto.lon}`);
+    marker.bindPopup(<strong>📍 Punto ID:</strong> ${punto.id}<br><b>Lat:</b> ${punto.lat}<br><b>Lon:</b> ${punto.lon});
 
     if (animationLine.length > 1) {
       L.polyline(animationLine.slice(animationLine.length - 2), { color: ultimoColor }).addTo(map);
@@ -265,6 +313,6 @@ function startAnimation() {
 
     animationIndex++;
     const porcentaje = (animationIndex / ultimoTrack.length) * 100;
-    progresoBarra.style.width = `${porcentaje}%`;
+    progresoBarra.style.width = ${porcentaje}%;
   }, animationSpeed);
 }
