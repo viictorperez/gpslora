@@ -36,21 +36,16 @@ function cargarCapaDeViento() {
         },
         data: data.data,
         maxVelocity: 15,
-        velocityScale: 0.01,            // ↓ esto controla lo "suave"
-        particleAge: 40,                // ↓ esto reduce la duración
-        lineWidth: 1,                   // ↓ esto reduce el grosor
+        velocityScale: 0.01,
+        particleAge: 40,
+        lineWidth: 1,
         colorScale: ["#2c7bb6", "#abd9e9", "#ffffbf", "#fdae61", "#d7191c"],
-        opacity: 0.2                    // ↓ más transparencia
+        opacity: 0.2
       });
 
-
-
-
       map.addLayer(velocityLayer);
-      // Mostrar hora del viento en el control
       const refTime = data.header?.refTime || new Date().toISOString();
       document.getElementById("info-viento").innerText = `💨 Viento actualizado: ${refTime} UTC`;
-
     })
     .catch(err => {
       console.warn("⚠️ No se pudo cargar la capa de viento:", err);
@@ -58,9 +53,8 @@ function cargarCapaDeViento() {
 }
 
 cargarCapaDeViento();
-setInterval(cargarCapaDeViento, 30 * 60 * 1000); // cada 30 min
+setInterval(cargarCapaDeViento, 30 * 60 * 1000);
 
-// -------------------
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
@@ -73,6 +67,9 @@ let animationSpeed = 500;
 
 const fileInput = document.getElementById("fileInput");
 
+// Perfiles CTD por punto ID
+const perfilesCTD = {};
+
 fileInput.addEventListener("change", (event) => {
   const files = event.target.files;
   const accion = document.querySelector('input[name="accion"]:checked').value;
@@ -84,12 +81,34 @@ fileInput.addEventListener("change", (event) => {
   });
 
   Array.from(files).forEach(file => {
+    // Si es un perfil CTD
+    const match = file.name.match(/punto[_-]?(\d+)/i);
+    if (match) {
+      const puntoId = match[1];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const contenido = e.target.result.trim();
+        const lineas = contenido.split('\n');
+        const columnas = lineas[0].split(',');
+        const datos = lineas.slice(1).map(linea => {
+          const partes = linea.split(',');
+          const fila = {};
+          columnas.forEach((col, i) => {
+            fila[col.trim()] = partes[i]?.trim();
+          });
+          return fila;
+        });
+        perfilesCTD[puntoId] = { columnas, datos };
+      };
+      reader.readAsText(file);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = function (e) {
       const contenido = e.target.result.trim();
       const lineas = contenido.split('\n').slice(1);
       const puntos = [];
-
       const color = colores[colorIndex++ % colores.length];
 
       lineas.forEach(linea => {
@@ -103,12 +122,18 @@ fileInput.addEventListener("change", (event) => {
         if (!isNaN(punto.lat) && !isNaN(punto.lon)) {
           puntos.push(punto);
 
+          const perfil = perfilesCTD[punto.id];
+          let popup = `<strong>📍 Punto ID:</strong> ${punto.id}<br><b>Lat:</b> ${punto.lat}<br><b>Lon:</b> ${punto.lon}`;
+          if (perfil) {
+            popup += `<br><button onclick="mostrarPerfilCTD('${punto.id}')">📊 Ver perfil CTD</button>`;
+          }
+
           L.circleMarker([punto.lat, punto.lon], {
             radius: 4,
             color: color,
             fillOpacity: 0.8
           })
-          .bindPopup(`<strong>📍 Punto ID:</strong> ${punto.id}<br><b>Lat:</b> ${punto.lat}<br><b>Lon:</b> ${punto.lon}`)
+          .bindPopup(popup)
           .addTo(map);
         }
       });
@@ -130,6 +155,26 @@ fileInput.addEventListener("change", (event) => {
 
   fileInput.value = "";
 });
+
+function mostrarPerfilCTD(id) {
+  const perfil = perfilesCTD[id];
+  if (!perfil) return;
+  const tabla = `
+    <html>
+    <head><title>Perfil CTD - Punto ${id}</title><style>
+      table { border-collapse: collapse; width: 100%; font-family: sans-serif; }
+      th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+      th { background: #f0f0f0; }
+    </style></head>
+    <body><h2>Perfil CTD - Punto ${id}</h2>
+    <table><thead><tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+    <tbody>${perfil.datos.map(fila => `<tr>${perfil.columnas.map(c => `<td>${fila[c]}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></body></html>
+  `;
+  const nuevaVentana = window.open();
+  nuevaVentana.document.write(tabla);
+  nuevaVentana.document.close();
+}
 
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
