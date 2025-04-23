@@ -55,6 +55,9 @@ function cargarCapaDeViento() {
 cargarCapaDeViento();
 setInterval(cargarCapaDeViento, 30 * 60 * 1000);
 
+// Perfiles CTD por punto ID
+const perfilesCTD = {};
+
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
@@ -80,8 +83,10 @@ fileInput.addEventListener("change", (event) => {
     }
   });
 
-  Array.from(files).forEach(file => {
-    // Si es un perfil CTD
+  // Reorganizamos los archivos: primero cargamos todos los perfiles
+  const archivosArray = Array.from(files);
+
+  archivosArray.forEach(file => {
     const match = file.name.match(/punto[_-]?(\d+)/i);
     if (match) {
       const puntoId = match[1];
@@ -101,8 +106,13 @@ fileInput.addEventListener("change", (event) => {
         perfilesCTD[puntoId] = { columnas, datos };
       };
       reader.readAsText(file);
-      return;
     }
+  });
+
+  // Luego procesamos los archivos que son tracks GPS
+  archivosArray.forEach(file => {
+    const match = file.name.match(/punto[_-]?(\d+)/i);
+    if (match) return; // ya lo hemos procesado arriba como perfil
 
     const reader = new FileReader();
     reader.onload = function (e) {
@@ -155,6 +165,7 @@ fileInput.addEventListener("change", (event) => {
 
   fileInput.value = "";
 });
+
 
 function mostrarPerfilCTD(id) {
   const perfil = perfilesCTD[id];
