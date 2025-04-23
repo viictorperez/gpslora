@@ -70,8 +70,6 @@ let animationSpeed = 500;
 
 const fileInput = document.getElementById("fileInput");
 
-// Perfiles CTD por punto ID
-const perfilesCTD = {};
 
 fileInput.addEventListener("change", (event) => {
   const files = event.target.files;
