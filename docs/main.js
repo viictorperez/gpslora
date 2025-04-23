@@ -73,7 +73,6 @@ const fileInput = document.getElementById("fileInput");
 
 fileInput.addEventListener("change", (event) => {
   
-  perfilesCTD = {}; // Limpiar perfiles de cargas anteriores
   
   const files = event.target.files;
   const accion = document.querySelector('input[name="accion"]:checked').value;
@@ -83,6 +82,9 @@ fileInput.addEventListener("change", (event) => {
       map.removeLayer(layer);
     }
   });
+
+  ultimoTrack = [];
+  perfilesCTD = {};
 
   const archivosArray = Array.from(files);
 
