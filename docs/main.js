@@ -56,7 +56,7 @@ cargarCapaDeViento();
 setInterval(cargarCapaDeViento, 30 * 60 * 1000);
 
 // Perfiles CTD por punto ID
-const perfilesCTD = {};
+let perfilesCTD = {};
 
 const colores = ['red', 'blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
@@ -72,6 +72,9 @@ const fileInput = document.getElementById("fileInput");
 
 
 fileInput.addEventListener("change", (event) => {
+  
+  perfilesCTD = {}; // Limpiar perfiles de cargas anteriores
+  
   const files = event.target.files;
   const accion = document.querySelector('input[name="accion"]:checked').value;
 
