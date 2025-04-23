@@ -81,88 +81,93 @@ fileInput.addEventListener("change", (event) => {
     }
   });
 
-  // Reorganizamos los archivos: primero cargamos todos los perfiles
   const archivosArray = Array.from(files);
 
-  archivosArray.forEach(file => {
-    const match = file.name.match(/punto[_-]?(\d+)/i);
-    if (match) {
-      const puntoId = match[1];
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const contenido = e.target.result.trim();
-        const lineas = contenido.split('\n');
-        const columnas = lineas[0].split(',');
-        const datos = lineas.slice(1).map(linea => {
-          const partes = linea.split(',');
-          const fila = {};
-          columnas.forEach((col, i) => {
-            fila[col.trim()] = partes[i]?.trim();
+  // 1. Leer primero todos los perfiles y guardar las promesas
+  const promesasPerfiles = archivosArray
+    .filter(file => /punto[_-]?(\d+)/i.test(file.name))
+    .map(file => {
+      const puntoId = file.name.match(/punto[_-]?(\d+)/i)[1];
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const contenido = e.target.result.trim();
+          const lineas = contenido.split('\n');
+          const columnas = lineas[0].split(',');
+          const datos = lineas.slice(1).map(linea => {
+            const partes = linea.split(',');
+            const fila = {};
+            columnas.forEach((col, i) => {
+              fila[col.trim()] = partes[i]?.trim();
+            });
+            return fila;
           });
-          return fila;
-        });
-        perfilesCTD[puntoId] = { columnas, datos };
-      };
-      reader.readAsText(file);
-    }
-  });
-
-  // Luego procesamos los archivos que son tracks GPS
-  archivosArray.forEach(file => {
-    const match = file.name.match(/punto[_-]?(\d+)/i);
-    if (match) return; // ya lo hemos procesado arriba como perfil
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const contenido = e.target.result.trim();
-      const lineas = contenido.split('\n').slice(1);
-      const puntos = [];
-      const color = colores[colorIndex++ % colores.length];
-
-      lineas.forEach(linea => {
-        const [id, lat, lon] = linea.split(',');
-        const punto = {
-          id: id.trim(),
-          lat: parseFloat(lat),
-          lon: parseFloat(lon)
+          perfilesCTD[puntoId] = { columnas, datos };
+          resolve(); // marcar que este archivo terminó de cargarse
         };
+        reader.readAsText(file);
+      });
+    });
 
-        if (!isNaN(punto.lat) && !isNaN(punto.lon)) {
-          puntos.push(punto);
+  // 2. Esperar a que todos los perfiles estén cargados
+  Promise.all(promesasPerfiles).then(() => {
+    // 3. Luego procesamos los archivos que son tracks GPS
+    archivosArray
+      .filter(file => !/punto[_-]?(\d+)/i.test(file.name))
+      .forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const contenido = e.target.result.trim();
+          const lineas = contenido.split('\n').slice(1);
+          const puntos = [];
+          const color = colores[colorIndex++ % colores.length];
 
-          const perfil = perfilesCTD[punto.id];
-          let popup = `<strong>📍 Punto ID:</strong> ${punto.id}<br><b>Lat:</b> ${punto.lat}<br><b>Lon:</b> ${punto.lon}`;
-          if (perfil) {
-            popup += `<br><button onclick="mostrarPerfilCTD('${punto.id}')">📊 Ver perfil CTD</button>`;
+          lineas.forEach(linea => {
+            const [id, lat, lon] = linea.split(',');
+            const punto = {
+              id: id.trim(),
+              lat: parseFloat(lat),
+              lon: parseFloat(lon)
+            };
+
+            if (!isNaN(punto.lat) && !isNaN(punto.lon)) {
+              puntos.push(punto);
+
+              const perfil = perfilesCTD[punto.id];
+              let popup = `<strong>📍 Punto ID:</strong> ${punto.id}<br><b>Lat:</b> ${punto.lat}<br><b>Lon:</b> ${punto.lon}`;
+              if (perfil) {
+                popup += `<br><button onclick="mostrarPerfilCTD('${punto.id}')">📊 Ver perfil CTD</button>`;
+              }
+
+              L.circleMarker([punto.lat, punto.lon], {
+                radius: 4,
+                color: color,
+                fillOpacity: 0.8
+              })
+              .bindPopup(popup)
+              .addTo(map);
+            }
+          });
+
+          if (puntos.length > 0) {
+            L.polyline(puntos.map(p => [p.lat, p.lon]), { color }).addTo(map);
+            map.fitBounds(puntos.map(p => [p.lat, p.lon]));
           }
 
-          L.circleMarker([punto.lat, punto.lon], {
-            radius: 4,
-            color: color,
-            fillOpacity: 0.8
-          })
-          .bindPopup(popup)
-          .addTo(map);
-        }
+          ultimoTrack = puntos;
+          ultimoColor = color;
+
+          if (accion === 'subir') {
+            subirCSVaZenodo(file);
+          }
+        };
+        reader.readAsText(file);
       });
 
-      if (puntos.length > 0) {
-        L.polyline(puntos.map(p => [p.lat, p.lon]), { color }).addTo(map);
-        map.fitBounds(puntos.map(p => [p.lat, p.lon]));
-      }
-
-      ultimoTrack = puntos;
-      ultimoColor = color;
-
-      if (accion === 'subir') {
-        subirCSVaZenodo(file);
-      }
-    };
-    reader.readAsText(file);
+    fileInput.value = "";
   });
-
-  fileInput.value = "";
 });
+
 
 
 function mostrarPerfilCTD(id) {
