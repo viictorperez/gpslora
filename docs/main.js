@@ -170,6 +170,14 @@ fileInput.addEventListener("change", (event) => {
       });
 
     fileInput.value = "";
+    if (accion === 'subir') {
+      archivosArray.forEach(file => {
+        if (file.name.toLowerCase().endsWith(".csv")) {
+          subirCSVaZenodo(file);
+        }
+      });
+    }
+
   });
 });
 
