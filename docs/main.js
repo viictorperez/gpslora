@@ -146,9 +146,10 @@ fileInput.addEventListener("change", (event) => {
 
               L.circleMarker([punto.lat, punto.lon], {
                 radius: 4,
-                color: color,
+                color: perfil ? 'black' : color,  // 🔁 usa negro si tiene perfil
                 fillOpacity: 0.8
               })
+
               .bindPopup(popup)
               .addTo(map);
             }
