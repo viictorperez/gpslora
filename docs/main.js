@@ -58,7 +58,7 @@ setInterval(cargarCapaDeViento, 30 * 60 * 1000);
 // Perfiles CTD por punto ID
 let perfilesCTD = {};
 
-const colores = ['red', 'blue', 'green', 'purple', 'orange'];
+const colores = ['blue', 'green', 'purple', 'orange'];
 let colorIndex = 0;
 
 let ultimoTrack = [];
@@ -146,7 +146,7 @@ fileInput.addEventListener("change", (event) => {
 
               L.circleMarker([punto.lat, punto.lon], {
                 radius: 4,
-                color: perfil ? 'black' : color,  // 🔁 usa negro si tiene perfil
+                color: perfil ? 'red' : color,  // 🔁 usa negro si tiene perfil
                 fillOpacity: 0.8
               })
 
