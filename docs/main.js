@@ -162,7 +162,6 @@ fileInput.addEventListener("change", (event) => {
           ultimoTrack = puntos;
           ultimoColor = color;
 
-          }
         };
         reader.readAsText(file);
       });
