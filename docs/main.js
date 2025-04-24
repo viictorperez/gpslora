@@ -162,8 +162,6 @@ fileInput.addEventListener("change", (event) => {
           ultimoTrack = puntos;
           ultimoColor = color;
 
-          if (accion === 'subir') {
-            subirCSVaZenodo(file);
           }
         };
         reader.readAsText(file);
