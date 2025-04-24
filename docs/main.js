@@ -1,6 +1,9 @@
 // Inicializar el mapa
 let map = L.map('map').setView([41.37, 2.19], 13);
 
+map.createPane('puntos');
+map.getPane('puntos').style.zIndex = 650; // más alto que polyline (default ~600)
+
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
 }).addTo(map);
@@ -148,6 +151,7 @@ fileInput.addEventListener("change", (event) => {
                 radius: 4,
                 color: perfil ? 'red' : color,  // 🔁 usa negro si tiene perfil
                 fillOpacity: 0.8
+                pane: 'puntos'  // 👈 esto los pone por encima
               })
 
               .bindPopup(popup)
