@@ -150,7 +150,7 @@ fileInput.addEventListener("change", (event) => {
               L.circleMarker([punto.lat, punto.lon], {
                 radius: 4,
                 color: perfil ? 'red' : color,  // 🔁 usa negro si tiene perfil
-                fillOpacity: 0.8
+                fillOpacity: 0.8,
                 pane: 'puntos'  // 👈 esto los pone por encima
               })
 
