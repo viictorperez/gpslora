@@ -203,7 +203,7 @@ function mostrarPerfilCTD(id) {
     </head>
     <body>
       <h2>Perfil CTD - Punto ${id}</h2>
-      <label>📈 Variable a mostrar: 
+      <label>📈 Variable a mostrar en el eje X: 
         <select id="selectorVariable"></select>
       </label>
       <canvas id="grafico"></canvas>
@@ -223,48 +223,53 @@ function mostrarPerfilCTD(id) {
         const ctx = document.getElementById('grafico').getContext('2d');
         const selector = document.getElementById('selectorVariable');
 
-        // Rellenar selector excepto la primera columna (se usa de X)
-        columnas.slice(1).forEach(col => {
-          const option = document.createElement('option');
-          option.value = col;
-          option.textContent = col;
-          selector.appendChild(option);
+        // Rellenar selector (exceptuamos la columna de profundidad fija)
+        columnas.forEach((col, index) => {
+          if (index !== 1) { // NO incluir la segunda columna (profundidad) en selector
+            const option = document.createElement('option');
+            option.value = col;
+            option.textContent = col;
+            selector.appendChild(option);
+          }
         });
 
         let grafico = null;
 
-        function dibujarGrafico(variableY) {
-          const labels = datos.map(f => f[columnas[0]]); // primera columna como eje X
-          const valores = datos.map(f => parseFloat(f[variableY]));
+        function dibujarGrafico(variableX) {
+          const ejeY = datos.map(f => parseFloat(f[columnas[1]])); // siempre profundidad (segunda columna)
+          const ejeX = datos.map(f => parseFloat(f[variableX]));
 
           if (grafico) grafico.destroy(); // destruir gráfico previo si existe
 
           grafico = new Chart(ctx, {
             type: 'line',
             data: {
-              labels: labels,
+              labels: ejeY, // profundidades como labels
               datasets: [{
-                label: variableY,
-                data: valores,
+                label: variableX,
+                data: ejeX,
                 borderWidth: 2,
                 fill: false,
                 tension: 0.3,
-                borderColor: "blue"
+                borderColor: "blue",
+                pointRadius: 2
               }]
             },
             options: {
+              indexAxis: 'y', // Invertir ejes
               responsive: true,
               scales: {
-                x: {
-                  title: {
-                    display: true,
-                    text: columnas[0]
-                  }
-                },
                 y: {
                   title: {
                     display: true,
-                    text: variableY
+                    text: columnas[1] // nombre de la profundidad
+                  },
+                  reverse: true // profundidad crece hacia abajo
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: variableX
                   }
                 }
               }
@@ -272,8 +277,8 @@ function mostrarPerfilCTD(id) {
           });
         }
 
-        // Inicializar gráfico con la primera variable
-        dibujarGrafico(selector.value = columnas[1]);
+        // Inicializar gráfico con primera variable disponible
+        dibujarGrafico(selector.value = columnas.find((col, idx) => idx !== 1));
 
         // Cambiar gráfica cuando cambie el selector
         selector.addEventListener('change', () => {
@@ -285,6 +290,7 @@ function mostrarPerfilCTD(id) {
   `);
   nuevaVentana.document.close();
 }
+
 
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
