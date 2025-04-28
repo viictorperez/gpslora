@@ -331,22 +331,25 @@ function mostrarPerfilCTD(id) {
 
         function ampliarGrafico(index) {
           const variableX = document.getElementById(selectIds[index]).value;
+          const ejeX = datos.map(f => parseFloat(f[variableX]));
           const nueva = window.open("", "_blank");
-          nueva.document.write(\`
+          nueva.document.write(`
             <html>
             <head><title>Ampliar Gráfico</title></head>
             <body>
               <canvas id="ampliado" width="800" height="600"></canvas>
-              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+              <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
               <script>
+                const labels = ${JSON.stringify(profundidad)};
+                const data = ${JSON.stringify(ejeX)};
                 const ctx = document.getElementById('ampliado').getContext('2d');
                 new Chart(ctx, {
                   type: 'line',
                   data: {
-                    labels: ${JSON.stringify(profundidad)},
+                    labels: labels,
                     datasets: [{
-                      label: '\${variableX}',
-                      data: ${JSON.stringify(datos)}.map(f => parseFloat(f[variableX])),
+                      label: '${variableX}',
+                      data: data,
                       borderColor: '${coloresLinea[index]}',
                       borderWidth: 2,
                       fill: false,
@@ -362,7 +365,7 @@ function mostrarPerfilCTD(id) {
                         title: { display: true, text: '${columnas[1]}' }
                       },
                       x: {
-                        title: { display: true, text: variableX }
+                        title: { display: true, text: '${variableX}' }
                       }
                     }
                   }
@@ -370,9 +373,10 @@ function mostrarPerfilCTD(id) {
               <\/script>
             </body>
             </html>
-          \`);
+          `);
           nueva.document.close();
         }
+
       </script>
     </body>
     </html>
