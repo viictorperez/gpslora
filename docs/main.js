@@ -203,43 +203,54 @@ function mostrarPerfilCTD(id) {
     </head>
     <body>
       <h2>Perfil CTD - Punto ${id}</h2>
-      <button onclick="dibujarGrafico()">📈 Ver Gráfica</button>
+      <label>📈 Variable a mostrar: 
+        <select id="selectorVariable"></select>
+      </label>
       <canvas id="grafico"></canvas>
-      <table><thead><tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr></thead>
-      <tbody>${perfil.datos.map(fila => `<tr>${perfil.columnas.map(c => `<td>${fila[c]}</td>`).join('')}</tr>`).join('')}</tbody>
+      <table>
+        <thead>
+          <tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${perfil.datos.map(fila => `<tr>${perfil.columnas.map(c => `<td>${fila[c]}</td>`).join('')}</tr>`).join('')}
+        </tbody>
       </table>
 
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script>
-        function dibujarGrafico() {
-          const columnas = ${JSON.stringify(perfil.columnas)};
-          const datos = ${JSON.stringify(perfil.datos)};
+        const columnas = ${JSON.stringify(perfil.columnas)};
+        const datos = ${JSON.stringify(perfil.datos)};
+        const ctx = document.getElementById('grafico').getContext('2d');
+        const selector = document.getElementById('selectorVariable');
 
-          const ctx = document.getElementById('grafico').getContext('2d');
-          
-          // Elegimos las columnas numéricas
-          const labels = datos.map(f => f[columnas[0]]); // primer columna como X (ej: profundidad)
-          const datasets = [];
+        // Rellenar selector excepto la primera columna (se usa de X)
+        columnas.slice(1).forEach(col => {
+          const option = document.createElement('option');
+          option.value = col;
+          option.textContent = col;
+          selector.appendChild(option);
+        });
 
-          for (let i = 1; i < columnas.length; i++) {
-            const key = columnas[i];
-            const valores = datos.map(f => parseFloat(f[key])).filter(v => !isNaN(v));
-            if (valores.length === datos.length) {
-              datasets.push({
-                label: key,
-                data: valores,
-                borderWidth: 2,
-                fill: false,
-                tension: 0.3
-              });
-            }
-          }
+        let grafico = null;
 
-          new Chart(ctx, {
+        function dibujarGrafico(variableY) {
+          const labels = datos.map(f => f[columnas[0]]); // primera columna como eje X
+          const valores = datos.map(f => parseFloat(f[variableY]));
+
+          if (grafico) grafico.destroy(); // destruir gráfico previo si existe
+
+          grafico = new Chart(ctx, {
             type: 'line',
             data: {
               labels: labels,
-              datasets: datasets
+              datasets: [{
+                label: variableY,
+                data: valores,
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3,
+                borderColor: "blue"
+              }]
             },
             options: {
               responsive: true,
@@ -253,20 +264,27 @@ function mostrarPerfilCTD(id) {
                 y: {
                   title: {
                     display: true,
-                    text: "Valor"
+                    text: variableY
                   }
                 }
               }
             }
           });
         }
+
+        // Inicializar gráfico con la primera variable
+        dibujarGrafico(selector.value = columnas[1]);
+
+        // Cambiar gráfica cuando cambie el selector
+        selector.addEventListener('change', () => {
+          dibujarGrafico(selector.value);
+        });
       </script>
     </body>
     </html>
   `);
   nuevaVentana.document.close();
 }
-
 
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
