@@ -189,168 +189,105 @@ function mostrarPerfilCTD(id) {
   const perfil = perfilesCTD[id];
   if (!perfil) return;
 
-  const nuevaVentana = window.open("", "_blank");
-  nuevaVentana.document.write(`
+  const columnas = perfil.columnas;
+  const datos = perfil.datos;
+
+  const profundidad = datos.map(f => parseFloat(f[columnas[1]])); // 👈 AÑADIDO: definimos profundidad
+
+  const coloresLinea = ["#0074D9", "#FF4136", "#2ECC40"]; // colores para los 3 gráficos
+  const selectIds = ["select1", "select2", "select3"];
+
+  const tabla = `
     <html>
     <head>
       <title>Perfil CTD - Punto ${id}</title>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <style>
-        body { font-family: sans-serif; margin: 10px; }
-        #graficos {
-          display: flex;
-          justify-content: space-around;
-          flex-wrap: wrap;
-          margin-bottom: 20px;
-        }
-        .grafico-container {
-          width: 30%;
-          min-width: 250px;
-          text-align: center;
-          margin: 10px;
-        }
-        .grafico-container canvas {
-          width: 100%;
-          height: 250px;
-        }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-        th { background: #f0f0f0; }
-        button { margin-top: 5px; }
+        body { font-family: sans-serif; }
+        .graficas { display: flex; gap: 20px; }
+        .grafico { flex: 1; }
+        canvas { width: 100%; height: 300px; }
       </style>
     </head>
     <body>
       <h2>Perfil CTD - Punto ${id}</h2>
-
-      <div id="graficos">
-        <div class="grafico-container">
-          <label>📈 Eje X (Gráfico 1):
-            <select id="selector1"></select>
-          </label>
-          <canvas id="grafico1"></canvas>
-          <br><button onclick="ampliarGrafico(0)">🔎 Ampliar</button>
-        </div>
-        <div class="grafico-container">
-          <label>📈 Eje X (Gráfico 2):
-            <select id="selector2"></select>
-          </label>
-          <canvas id="grafico2"></canvas>
-          <br><button onclick="ampliarGrafico(1)">🔎 Ampliar</button>
-        </div>
-        <div class="grafico-container">
-          <label>📈 Eje X (Gráfico 3):
-            <select id="selector3"></select>
-          </label>
-          <canvas id="grafico3"></canvas>
-          <br><button onclick="ampliarGrafico(2)">🔎 Ampliar</button>
-        </div>
+      <div class="graficas">
+        ${[0,1,2].map(i => `
+          <div class="grafico">
+            <select id="${selectIds[i]}" onchange="actualizarGrafico(${i})">
+              ${columnas.map(c => `<option value="${c}">${c}</option>`).join('')}
+            </select>
+            <canvas id="grafico${i}"></canvas>
+            <button onclick="ampliarGrafico(${i})">🔍 Ampliar</button>
+          </div>
+        `).join('')}
       </div>
-
-      <table>
-        <thead>
-          <tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr>
-        </thead>
-        <tbody>
-          ${perfil.datos.map(fila => `<tr>${perfil.columnas.map(c => `<td>${fila[c]}</td>`).join('')}</tr>`).join('')}
-        </tbody>
-      </table>
-
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script>
-        const columnas = ${JSON.stringify(perfil.columnas)};
-        const datos = ${JSON.stringify(perfil.datos)};
-
-        const profundidad = datos.map(f => parseFloat(f[columnas[1]]));
-        const canvasIds = ["grafico1", "grafico2", "grafico3"];
-        const selectIds = ["selector1", "selector2", "selector3"];
-        const defaultColumnas = [columnas[1], columnas[3], columnas[6]];
-        const coloresLinea = ["blue", "red", "green"];
+        const columnas = ${JSON.stringify(columnas)};
+        const datos = ${JSON.stringify(datos)};
+        const profundidad = ${JSON.stringify(profundidad)};
+        const coloresLinea = ${JSON.stringify(coloresLinea)};
+        const selectIds = ${JSON.stringify(selectIds)};
+        
         const charts = [];
 
-        canvasIds.forEach((canvasId, idx) => {
-          const ctx = document.getElementById(canvasId).getContext('2d');
-          const selector = document.getElementById(selectIds[idx]);
-
-          columnas.forEach((col, i) => {
-            if (i !== 1) {
-              const option = document.createElement('option');
-              option.value = col;
-              option.textContent = col;
-              selector.appendChild(option);
+        function actualizarGrafico(index) {
+          const variableX = document.getElementById(selectIds[index]).value;
+          const ejeX = datos.map(f => parseFloat(f[variableX]));
+          const ctx = document.getElementById("grafico" + index).getContext("2d");
+          if (charts[index]) charts[index].destroy();
+          charts[index] = new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: profundidad,
+              datasets: [{
+                label: variableX,
+                data: ejeX,
+                borderColor: coloresLinea[index],
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3,
+                pointRadius: 2
+              }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              scales: {
+                y: { title: { display: true, text: columnas[1] } },
+                x: { title: { display: true, text: variableX } }
+              }
             }
           });
+        }
 
-          selector.value = defaultColumnas[idx] || selector.options[0]?.value;
-
-          function dibujar(variableX) {
-            const ejeX = datos.map(f => parseFloat(f[variableX]));
-
-            if (charts[idx]) charts[idx].destroy();
-
-            charts[idx] = new Chart(ctx, {
-              type: 'line',
-              data: {
-                labels: profundidad,
-                datasets: [{
-                  label: variableX,
-                  data: ejeX,
-                  borderColor: coloresLinea[idx],
-                  borderWidth: 2,
-                  fill: false,
-                  tension: 0.3,
-                  pointRadius: 2
-                }]
-              },
-              options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                  y: {
-                    title: {
-                      display: true,
-                      text: columnas[1]
-                    }
-                  },
-                  x: {
-                    title: {
-                      display: true,
-                      text: variableX
-                    }
-                  }
-                }
-              }
-            });
-          }
-
-          dibujar(selector.value);
-
-          selector.addEventListener('change', () => {
-            dibujar(selector.value);
-          });
+        [1,3,6].forEach((colIndex, i) => {
+          document.getElementById(selectIds[i]).value = columnas[colIndex];
+          actualizarGrafico(i);
         });
 
         function ampliarGrafico(index) {
           const variableX = document.getElementById(selectIds[index]).value;
           const ejeX = datos.map(f => parseFloat(f[variableX]));
           const nueva = window.open("", "_blank");
-          nueva.document.write(`
+          nueva.document.write(\`
             <html>
             <head><title>Ampliar Gráfico</title></head>
             <body>
               <canvas id="ampliado" width="800" height="600"></canvas>
               <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
               <script>
-                const labels = ${JSON.stringify(profundidad)};
-                const data = ${JSON.stringify(ejeX)};
+                const labels = \${JSON.stringify(profundidad)};
+                const data = \${JSON.stringify(ejeX)};
                 const ctx = document.getElementById('ampliado').getContext('2d');
                 new Chart(ctx, {
                   type: 'line',
                   data: {
                     labels: labels,
                     datasets: [{
-                      label: '${variableX}',
+                      label: '\${variableX}',
                       data: data,
-                      borderColor: '${coloresLinea[index]}',
+                      borderColor: '\${coloresLinea[index]}',
                       borderWidth: 2,
                       fill: false,
                       tension: 0.3,
@@ -361,29 +298,26 @@ function mostrarPerfilCTD(id) {
                     indexAxis: 'y',
                     responsive: true,
                     scales: {
-                      y: {
-                        title: { display: true, text: '${columnas[1]}' }
-                      },
-                      x: {
-                        title: { display: true, text: '${variableX}' }
-                      }
+                      y: { title: { display: true, text: '${columnas[1]}' } },
+                      x: { title: { display: true, text: variableX } }
                     }
                   }
                 });
               <\/script>
             </body>
             </html>
-          `);
+          \`);
           nueva.document.close();
         }
-
       </script>
     </body>
     </html>
-  `);
+  `;
+
+  const nuevaVentana = window.open();
+  nuevaVentana.document.write(tabla);
   nuevaVentana.document.close();
 }
-
 
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
