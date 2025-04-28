@@ -188,22 +188,85 @@ fileInput.addEventListener("change", (event) => {
 function mostrarPerfilCTD(id) {
   const perfil = perfilesCTD[id];
   if (!perfil) return;
-  const tabla = `
+
+  const nuevaVentana = window.open("", "_blank");
+  nuevaVentana.document.write(`
     <html>
-    <head><title>Perfil CTD - Punto ${id}</title><style>
-      table { border-collapse: collapse; width: 100%; font-family: sans-serif; }
-      th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-      th { background: #f0f0f0; }
-    </style></head>
-    <body><h2>Perfil CTD - Punto ${id}</h2>
-    <table><thead><tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr></thead>
-    <tbody>${perfil.datos.map(fila => `<tr>${perfil.columnas.map(c => `<td>${fila[c]}</td>`).join('')}</tr>`).join('')}</tbody>
-    </table></body></html>
-  `;
-  const nuevaVentana = window.open();
-  nuevaVentana.document.write(tabla);
+    <head>
+      <title>Perfil CTD - Punto ${id}</title>
+      <style>
+        table { border-collapse: collapse; width: 100%; font-family: sans-serif; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+        th { background: #f0f0f0; }
+        #grafico { width: 100%; height: 400px; margin-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <h2>Perfil CTD - Punto ${id}</h2>
+      <button onclick="dibujarGrafico()">📈 Ver Gráfica</button>
+      <canvas id="grafico"></canvas>
+      <table><thead><tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${perfil.datos.map(fila => `<tr>${perfil.columnas.map(c => `<td>${fila[c]}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script>
+        function dibujarGrafico() {
+          const columnas = ${JSON.stringify(perfil.columnas)};
+          const datos = ${JSON.stringify(perfil.datos)};
+
+          const ctx = document.getElementById('grafico').getContext('2d');
+          
+          // Elegimos las columnas numéricas
+          const labels = datos.map(f => f[columnas[0]]); // primer columna como X (ej: profundidad)
+          const datasets = [];
+
+          for (let i = 1; i < columnas.length; i++) {
+            const key = columnas[i];
+            const valores = datos.map(f => parseFloat(f[key])).filter(v => !isNaN(v));
+            if (valores.length === datos.length) {
+              datasets.push({
+                label: key,
+                data: valores,
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3
+              });
+            }
+          }
+
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: datasets
+            },
+            options: {
+              responsive: true,
+              scales: {
+                x: {
+                  title: {
+                    display: true,
+                    text: columnas[0]
+                  }
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: "Valor"
+                  }
+                }
+              }
+            }
+          });
+        }
+      </script>
+    </body>
+    </html>
+  `);
   nuevaVentana.document.close();
 }
+
 
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
