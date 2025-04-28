@@ -195,18 +195,56 @@ function mostrarPerfilCTD(id) {
     <head>
       <title>Perfil CTD - Punto ${id}</title>
       <style>
-        table { border-collapse: collapse; width: 100%; font-family: sans-serif; margin-top: 20px; }
+        body { font-family: sans-serif; margin: 10px; }
+        #graficos {
+          display: flex;
+          justify-content: space-around;
+          flex-wrap: wrap;
+          margin-bottom: 20px;
+        }
+        .grafico-container {
+          width: 30%;
+          min-width: 250px;
+          text-align: center;
+          margin: 10px;
+        }
+        .grafico-container canvas {
+          width: 100%;
+          height: 250px;
+        }
+        table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
         th { background: #f0f0f0; }
-        #grafico { width: 100%; height: 400px; margin-top: 20px; }
+        button { margin-top: 5px; }
       </style>
     </head>
     <body>
       <h2>Perfil CTD - Punto ${id}</h2>
-      <label>📈 Variable a mostrar en el eje X: 
-        <select id="selectorVariable"></select>
-      </label>
-      <canvas id="grafico"></canvas>
+
+      <div id="graficos">
+        <div class="grafico-container">
+          <label>📈 Eje X (Gráfico 1):
+            <select id="selector1"></select>
+          </label>
+          <canvas id="grafico1"></canvas>
+          <br><button onclick="ampliarGrafico(0)">🔎 Ampliar</button>
+        </div>
+        <div class="grafico-container">
+          <label>📈 Eje X (Gráfico 2):
+            <select id="selector2"></select>
+          </label>
+          <canvas id="grafico2"></canvas>
+          <br><button onclick="ampliarGrafico(1)">🔎 Ampliar</button>
+        </div>
+        <div class="grafico-container">
+          <label>📈 Eje X (Gráfico 3):
+            <select id="selector3"></select>
+          </label>
+          <canvas id="grafico3"></canvas>
+          <br><button onclick="ampliarGrafico(2)">🔎 Ampliar</button>
+        </div>
+      </div>
+
       <table>
         <thead>
           <tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr>
@@ -220,70 +258,121 @@ function mostrarPerfilCTD(id) {
       <script>
         const columnas = ${JSON.stringify(perfil.columnas)};
         const datos = ${JSON.stringify(perfil.datos)};
-        const ctx = document.getElementById('grafico').getContext('2d');
-        const selector = document.getElementById('selectorVariable');
 
-        // Rellenar selector (exceptuamos la columna de profundidad fija)
-        columnas.forEach((col, index) => {
-          if (index !== 1) { // NO incluir la segunda columna (profundidad) en selector
-            const option = document.createElement('option');
-            option.value = col;
-            option.textContent = col;
-            selector.appendChild(option);
-          }
-        });
+        const profundidad = datos.map(f => parseFloat(f[columnas[1]]));
+        const canvasIds = ["grafico1", "grafico2", "grafico3"];
+        const selectIds = ["selector1", "selector2", "selector3"];
+        const defaultColumnas = [columnas[1], columnas[3], columnas[6]];
+        const coloresLinea = ["blue", "red", "green"];
+        const charts = [];
 
-        let grafico = null;
+        canvasIds.forEach((canvasId, idx) => {
+          const ctx = document.getElementById(canvasId).getContext('2d');
+          const selector = document.getElementById(selectIds[idx]);
 
-        function dibujarGrafico(variableX) {
-          const ejeY = datos.map(f => parseFloat(f[columnas[1]])); // siempre profundidad (segunda columna)
-          const ejeX = datos.map(f => parseFloat(f[variableX]));
+          columnas.forEach((col, i) => {
+            if (i !== 1) {
+              const option = document.createElement('option');
+              option.value = col;
+              option.textContent = col;
+              selector.appendChild(option);
+            }
+          });
 
-          if (grafico) grafico.destroy(); // destruir gráfico previo si existe
+          selector.value = defaultColumnas[idx] || selector.options[0]?.value;
 
-          grafico = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: ejeY, // profundidades como labels
-              datasets: [{
-                label: variableX,
-                data: ejeX,
-                borderWidth: 2,
-                fill: false,
-                tension: 0.3,
-                borderColor: "blue",
-                pointRadius: 2
-              }]
-            },
-            options: {
-              indexAxis: 'y', // Invertir ejes
-              responsive: true,
-              scales: {
-                y: {
-                  title: {
-                    display: true,
-                    text: columnas[1] // nombre de la profundidad
+          function dibujar(variableX) {
+            const ejeX = datos.map(f => parseFloat(f[variableX]));
+
+            if (charts[idx]) charts[idx].destroy();
+
+            charts[idx] = new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: profundidad,
+                datasets: [{
+                  label: variableX,
+                  data: ejeX,
+                  borderColor: coloresLinea[idx],
+                  borderWidth: 2,
+                  fill: false,
+                  tension: 0.3,
+                  pointRadius: 2
+                }]
+              },
+              options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    title: {
+                      display: true,
+                      text: columnas[1]
+                    }
                   },
-                  reverse: true // profundidad crece hacia abajo
-                },
-                x: {
-                  title: {
-                    display: true,
-                    text: variableX
+                  x: {
+                    title: {
+                      display: true,
+                      text: variableX
+                    }
                   }
                 }
               }
-            }
+            });
+          }
+
+          dibujar(selector.value);
+
+          selector.addEventListener('change', () => {
+            dibujar(selector.value);
           });
-        }
-
-        // Inicializar gráfico con primera variable disponible
-        dibujarGrafico(selector.value = columnas.find((col, idx) => idx !== 1));
-
-        // Cambiar gráfica cuando cambie el selector
-        selector.addEventListener('change', () => {
-          dibujarGrafico(selector.value);
         });
+
+        function ampliarGrafico(index) {
+          const variableX = document.getElementById(selectIds[index]).value;
+          const nueva = window.open("", "_blank");
+          nueva.document.write(\`
+            <html>
+            <head><title>Ampliar Gráfico</title></head>
+            <body>
+              <canvas id="ampliado" width="800" height="600"></canvas>
+              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+              <script>
+                const ctx = document.getElementById('ampliado').getContext('2d');
+                new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                    labels: ${JSON.stringify(profundidad)},
+                    datasets: [{
+                      label: '\${variableX}',
+                      data: ${JSON.stringify(datos)}.map(f => parseFloat(f[variableX])),
+                      borderColor: '${coloresLinea[index]}',
+                      borderWidth: 2,
+                      fill: false,
+                      tension: 0.3,
+                      pointRadius: 2
+                    }]
+                  },
+                  options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: {
+                      y: {
+                        title: { display: true, text: '${columnas[1]}' }
+                      },
+                      x: {
+                        title: { display: true, text: variableX }
+                      }
+                    }
+                  }
+                });
+              <\/script>
+            </body>
+            </html>
+          \`);
+          nueva.document.close();
+        }
       </script>
     </body>
     </html>
