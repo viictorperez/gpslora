@@ -193,7 +193,7 @@ function mostrarPerfilCTD(id) {
   const datos = perfil.datos;
   const profundidad = datos.map(f => parseFloat(f[columnas[1]]));
   const colores = ["#0074D9", "#FF4136", "#2ECC40"];
-  const defaultCols = [columnas[1], columnas[3], columnas[6]];
+  const defaultCols = [columnas[0], columnas[2], columnas[5]];
 
   const nuevaVentana = window.open("", "_blank");
 
