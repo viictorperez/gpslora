@@ -269,25 +269,27 @@ function mostrarPerfilCTD(id) {
         function ampliarGrafico(index) {
           const variableX = document.getElementById(selectIds[index]).value;
           const ejeX = datos.map(f => parseFloat(f[variableX]));
+          const labels = profundidad;
+        
           const nueva = window.open("", "_blank");
-          nueva.document.write(\`
+          const html = `
             <html>
-            <head><title>Ampliar Gráfico</title></head>
+            <head>
+              <title>Ampliar Gráfico</title>
+              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            </head>
             <body>
               <canvas id="ampliado" width="800" height="600"></canvas>
-              <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
               <script>
-                const labels = \${JSON.stringify(profundidad)};
-                const data = \${JSON.stringify(ejeX)};
                 const ctx = document.getElementById('ampliado').getContext('2d');
                 new Chart(ctx, {
                   type: 'line',
                   data: {
-                    labels: labels,
+                    labels: ${JSON.stringify(labels)},
                     datasets: [{
-                      label: '\${variableX}',
-                      data: data,
-                      borderColor: '\${coloresLinea[index]}',
+                      label: '${variableX}',
+                      data: ${JSON.stringify(ejeX)},
+                      borderColor: '${coloresLinea[index]}',
                       borderWidth: 2,
                       fill: false,
                       tension: 0.3,
@@ -299,16 +301,19 @@ function mostrarPerfilCTD(id) {
                     responsive: true,
                     scales: {
                       y: { title: { display: true, text: '${columnas[1]}' } },
-                      x: { title: { display: true, text: variableX } }
+                      x: { title: { display: true, text: '${variableX}' } }
                     }
                   }
                 });
-              <\/script>
+              </script>
             </body>
             </html>
-          \`);
+          `;
+          nueva.document.open();
+          nueva.document.write(html);
           nueva.document.close();
         }
+
       </script>
     </body>
     </html>
