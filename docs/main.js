@@ -189,108 +189,75 @@ function mostrarPerfilCTD(id) {
   const perfil = perfilesCTD[id];
   if (!perfil) return;
 
+  const columnas = perfil.columnas;
+  const datos = perfil.datos;
+  const profundidad = datos.map(f => parseFloat(f[columnas[1]]));
+  const colores = ["#0074D9", "#FF4136", "#2ECC40"];
+  const defaultCols = [columnas[1], columnas[3], columnas[6]];
+
   const nuevaVentana = window.open("", "_blank");
-  nuevaVentana.document.write(`
-    <html>
-    <head>
-      <title>Perfil CTD - Punto ${id}</title>
-      <style>
-        table { border-collapse: collapse; width: 100%; font-family: sans-serif; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-        th { background: #f0f0f0; }
-        #grafico { width: 100%; height: 400px; margin-top: 20px; }
-      </style>
-    </head>
-    <body>
-      <h2>Perfil CTD - Punto ${id}</h2>
-      <label>📈 Variable a mostrar en el eje X: 
-        <select id="selectorVariable"></select>
-      </label>
-      <canvas id="grafico"></canvas>
-      <table>
-        <thead>
-          <tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr>
-        </thead>
-        <tbody>
-          ${perfil.datos.map(fila => `<tr>${perfil.columnas.map(c => `<td>${fila[c]}</td>`).join('')}</tr>`).join('')}
-        </tbody>
-      </table>
 
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      <script>
-        const columnas = ${JSON.stringify(perfil.columnas)};
-        const datos = ${JSON.stringify(perfil.datos)};
-        const ctx = document.getElementById('grafico').getContext('2d');
-        const selector = document.getElementById('selectorVariable');
+  nuevaVentana.document.title = `Perfil CTD - Punto ${id}`;
+  const doc = nuevaVentana.document;
 
-        // Rellenar selector (exceptuamos la columna de profundidad fija)
-        columnas.forEach((col, index) => {
-          if (index !== 1) { // NO incluir la segunda columna (profundidad) en selector
-            const option = document.createElement('option');
-            option.value = col;
-            option.textContent = col;
-            selector.appendChild(option);
+  // Crear base del documento
+  doc.body.innerHTML = `
+    <h2>Perfil CTD - Punto ${id}</h2>
+    <div style="display: flex; gap: 10px;">
+      ${[0,1,2].map(i => `
+        <div style="flex: 1;">
+          <select id="select${i}">${columnas.map(col => `<option value="${col}">${col}</option>`).join('')}</select>
+          <canvas id="canvas${i}" height="300"></canvas>
+        </div>
+      `).join('')}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
+  `;
+
+  // Esperar a que el script de Chart.js cargue
+  const script = doc.createElement('script');
+  script.onload = () => {
+    const charts = [];
+
+    function renderChart(i, colName) {
+      const ctx = doc.getElementById(`canvas${i}`).getContext('2d');
+      const values = datos.map(f => parseFloat(f[colName]));
+      if (charts[i]) charts[i].destroy();
+      charts[i] = new nuevaVentana.Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: profundidad,
+          datasets: [{
+            label: colName,
+            data: values,
+            borderColor: colores[i],
+            fill: false,
+            tension: 0.3,
+            pointRadius: 2
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          scales: {
+            y: { title: { display: true, text: columnas[1] } },
+            x: { title: { display: true, text: colName } }
           }
-        });
-
-        let grafico = null;
-
-        function dibujarGrafico(variableX) {
-          const ejeY = datos.map(f => parseFloat(f[columnas[1]])); // siempre profundidad (segunda columna)
-          const ejeX = datos.map(f => parseFloat(f[variableX]));
-
-          if (grafico) grafico.destroy(); // destruir gráfico previo si existe
-
-          grafico = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: ejeY, // profundidades como labels
-              datasets: [{
-                label: variableX,
-                data: ejeX,
-                borderWidth: 2,
-                fill: false,
-                tension: 0.3,
-                borderColor: "blue",
-                pointRadius: 2
-              }]
-            },
-            options: {
-              indexAxis: 'y', // Invertir ejes
-              responsive: true,
-              scales: {
-                y: {
-                  title: {
-                    display: true,
-                    text: columnas[1] // nombre de la profundidad
-                  },
-                  reverse: true // profundidad crece hacia abajo
-                },
-                x: {
-                  title: {
-                    display: true,
-                    text: variableX
-                  }
-                }
-              }
-            }
-          });
         }
+      });
+    }
 
-        // Inicializar gráfico con primera variable disponible
-        dibujarGrafico(selector.value = columnas.find((col, idx) => idx !== 1));
-
-        // Cambiar gráfica cuando cambie el selector
-        selector.addEventListener('change', () => {
-          dibujarGrafico(selector.value);
-        });
-      </script>
-    </body>
-    </html>
-  `);
-  nuevaVentana.document.close();
+    // Inicializar y asociar a selects
+    [0,1,2].forEach(i => {
+      const select = doc.getElementById(`select${i}`);
+      select.value = defaultCols[i];
+      renderChart(i, select.value);
+      select.addEventListener('change', () => renderChart(i, select.value));
+    });
+  };
+  script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+  doc.head.appendChild(script);
 }
-
 
 function subirCSVaZenodo(file) {
   const autor = document.getElementById("autor").value.trim();
