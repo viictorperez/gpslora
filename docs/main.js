@@ -183,131 +183,108 @@ fileInput.addEventListener("change", (event) => {
   });
 });
 
+
+
 function mostrarPerfilCTD(id) {
   const perfil = perfilesCTD[id];
   if (!perfil) return;
-
-  const columnas = perfil.columnas;
-  const datos = perfil.datos;
-  const profundidad = datos.map(f => parseFloat(f[columnas[1]]));
-  const coloresLinea = ["#0074D9", "#FF4136", "#2ECC40"];
-  const selectIds = ["select1", "select2", "select3"];
 
   const nuevaVentana = window.open("", "_blank");
   nuevaVentana.document.write(`
     <html>
     <head>
       <title>Perfil CTD - Punto ${id}</title>
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <style>
-        body { font-family: sans-serif; }
-        .graficas { display: flex; gap: 20px; }
-        .grafico { flex: 1; }
-        canvas { width: 100%; height: 300px; }
+        table { border-collapse: collapse; width: 100%; font-family: sans-serif; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+        th { background: #f0f0f0; }
+        #grafico { width: 100%; height: 400px; margin-top: 20px; }
       </style>
     </head>
     <body>
       <h2>Perfil CTD - Punto ${id}</h2>
-      <div class="graficas">
-        ${[0,1,2].map(i => `
-          <div class="grafico">
-            <select id="${selectIds[i]}" onchange="actualizarGrafico(${i})">
-              ${columnas.map(c => `<option value="${c}">${c}</option>`).join('')}
-            </select>
-            <canvas id="grafico${i}"></canvas>
-            <button onclick="ampliarGrafico(${i})">🔍 Ampliar</button>
-          </div>
-        `).join('')}
-      </div>
-      <script>
-        const columnas = ${JSON.stringify(columnas)};
-        const datos = ${JSON.stringify(datos)};
-        const profundidad = ${JSON.stringify(profundidad)};
-        const coloresLinea = ${JSON.stringify(coloresLinea)};
-        const selectIds = ${JSON.stringify(selectIds)};
-        const charts = [];
+      <label>📈 Variable a mostrar en el eje X: 
+        <select id="selectorVariable"></select>
+      </label>
+      <canvas id="grafico"></canvas>
+      <table>
+        <thead>
+          <tr>${perfil.columnas.map(c => `<th>${c}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${perfil.datos.map(fila => `<tr>${perfil.columnas.map(c => `<td>${fila[c]}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
 
-        function actualizarGrafico(index) {
-          const variableX = document.getElementById(selectIds[index]).value;
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script>
+        const columnas = ${JSON.stringify(perfil.columnas)};
+        const datos = ${JSON.stringify(perfil.datos)};
+        const ctx = document.getElementById('grafico').getContext('2d');
+        const selector = document.getElementById('selectorVariable');
+
+        // Rellenar selector (exceptuamos la columna de profundidad fija)
+        columnas.forEach((col, index) => {
+          if (index !== 1) { // NO incluir la segunda columna (profundidad) en selector
+            const option = document.createElement('option');
+            option.value = col;
+            option.textContent = col;
+            selector.appendChild(option);
+          }
+        });
+
+        let grafico = null;
+
+        function dibujarGrafico(variableX) {
+          const ejeY = datos.map(f => parseFloat(f[columnas[1]])); // siempre profundidad (segunda columna)
           const ejeX = datos.map(f => parseFloat(f[variableX]));
-          const ctx = document.getElementById("grafico" + index).getContext("2d");
-          if (charts[index]) charts[index].destroy();
-          charts[index] = new Chart(ctx, {
-            type: "line",
+
+          if (grafico) grafico.destroy(); // destruir gráfico previo si existe
+
+          grafico = new Chart(ctx, {
+            type: 'line',
             data: {
-              labels: profundidad,
+              labels: ejeY, // profundidades como labels
               datasets: [{
                 label: variableX,
                 data: ejeX,
-                borderColor: coloresLinea[index],
                 borderWidth: 2,
                 fill: false,
                 tension: 0.3,
+                borderColor: "blue",
                 pointRadius: 2
               }]
             },
             options: {
-              indexAxis: 'y',
+              indexAxis: 'y', // Invertir ejes
               responsive: true,
               scales: {
-                y: { title: { display: true, text: columnas[1] } },
-                x: { title: { display: true, text: variableX } }
+                y: {
+                  title: {
+                    display: true,
+                    text: columnas[1] // nombre de la profundidad
+                  },
+                  reverse: true // profundidad crece hacia abajo
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: variableX
+                  }
+                }
               }
             }
           });
         }
 
-        function ampliarGrafico(index) {
-          const variableX = document.getElementById(selectIds[index]).value;
-          const ejeX = datos.map(f => parseFloat(f[variableX]));
-          const labels = profundidad;
-        
-          const nueva = window.open("", "_blank");
-          nueva.document.write(\`
-            <html>
-            <head>
-              <title>Ampliar Gráfico</title>
-              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            </head>
-            <body>
-              <canvas id="ampliado" width="800" height="600"></canvas>
-              <script>
-                const ctx = document.getElementById('ampliado').getContext('2d');
-                new Chart(ctx, {
-                  type: 'line',
-                  data: {
-                    labels: \${JSON.stringify(labels)},
-                    datasets: [{
-                      label: '\${variableX}',
-                      data: \${JSON.stringify(ejeX)},
-                      borderColor: '\${coloresLinea[index]}',
-                      borderWidth: 2,
-                      fill: false,
-                      tension: 0.3,
-                      pointRadius: 2
-                    }]
-                  },
-                  options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    scales: {
-                      y: { title: { display: true, text: '\${columnas[1]}' } },
-                      x: { title: { display: true, text: '\${variableX}' } }
-                    }
-                  }
-                });
-              <\/script>
-            </body>
-            </html>
-          \`);
-          nueva.document.close();
-        }
+        // Inicializar gráfico con primera variable disponible
+        dibujarGrafico(selector.value = columnas.find((col, idx) => idx !== 1));
 
-        [1,3,6].forEach((colIndex, i) => {
-          document.getElementById(selectIds[i]).value = columnas[colIndex];
-          actualizarGrafico(i);
+        // Cambiar gráfica cuando cambie el selector
+        selector.addEventListener('change', () => {
+          dibujarGrafico(selector.value);
         });
-      <\/script>
+      </script>
     </body>
     </html>
   `);
