@@ -101,15 +101,16 @@ fileInput.addEventListener("change", (event) => {
         reader.onload = function (e) {
           const contenido = e.target.result.trim();
           const lineas = contenido.split('\n');
-          const columnas = lineas[0].split(',');
+          const columnas = lineas[0].split(',').map(c => c.trim());
           const datos = lineas.slice(1).map(linea => {
             const partes = linea.split(',');
             const fila = {};
             columnas.forEach((col, i) => {
-              fila[col.trim()] = partes[i]?.trim();
+              fila[col] = partes[i]?.trim();
             });
             return fila;
           });
+
           perfilesCTD[puntoId] = { columnas, datos };
           resolve(); // marcar que este archivo terminó de cargarse
         };
