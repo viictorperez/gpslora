@@ -189,19 +189,18 @@ function mostrarPerfilCTD(id) {
 
   const columnas = perfil.columnas;
   const datos = perfil.datos;
-  const profundidad = datos.map(f => parseFloat(f[columnas[1]])); // profundidad = eje Y
-
+  const profundidad = datos.map(f => parseFloat(f[columnas[1]]));
   const coloresLinea = ["#0074D9", "#FF4136", "#2ECC40"];
   const selectIds = ["select1", "select2", "select3"];
-  const defaultCols = [0, 3, 6]; // presión, temperatura, salinidad por defecto
 
-  const html = `
+  const nuevaVentana = window.open("", "_blank");
+  nuevaVentana.document.write(`
     <html>
     <head>
       <title>Perfil CTD - Punto ${id}</title>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <style>
-        body { font-family: sans-serif; margin: 20px; }
+        body { font-family: sans-serif; }
         .graficas { display: flex; gap: 20px; }
         .grafico { flex: 1; }
         canvas { width: 100%; height: 300px; }
@@ -210,7 +209,7 @@ function mostrarPerfilCTD(id) {
     <body>
       <h2>Perfil CTD - Punto ${id}</h2>
       <div class="graficas">
-        ${[0, 1, 2].map(i => `
+        ${[0,1,2].map(i => `
           <div class="grafico">
             <select id="${selectIds[i]}" onchange="actualizarGrafico(${i})">
               ${columnas.map(c => `<option value="${c}">${c}</option>`).join('')}
@@ -220,7 +219,6 @@ function mostrarPerfilCTD(id) {
           </div>
         `).join('')}
       </div>
-
       <script>
         const columnas = ${JSON.stringify(columnas)};
         const datos = ${JSON.stringify(datos)};
@@ -259,56 +257,61 @@ function mostrarPerfilCTD(id) {
           });
         }
 
-        [0,1,2].forEach((i) => {
-          document.getElementById(selectIds[i]).value = columnas[defaultCols[i]];
-          actualizarGrafico(i);
-        });
-
         function ampliarGrafico(index) {
           const variableX = document.getElementById(selectIds[index]).value;
           const ejeX = datos.map(f => parseFloat(f[variableX]));
-          const nueva = window.open();
+          const labels = profundidad;
+        
+          const nueva = window.open("", "_blank");
           nueva.document.write(\`
-            <html><head><title>Ampliado</title>
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head><body>
-            <canvas id="ampliado" width="800" height="600"></canvas>
-            <script>
-              const ctx = document.getElementById('ampliado').getContext('2d');
-              new Chart(ctx, {
-                type: 'line',
-                data: {
-                  labels: \${JSON.stringify(profundidad)},
-                  datasets: [{
-                    label: '\${variableX}',
-                    data: \${JSON.stringify(ejeX)},
-                    borderColor: '\${coloresLinea[index]}',
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.3,
-                    pointRadius: 2
-                  }]
-                },
-                options: {
-                  indexAxis: 'y',
-                  responsive: true,
-                  scales: {
-                    y: { title: { display: true, text: '${columnas[1]}' } },
-                    x: { title: { display: true, text: variableX } }
+            <html>
+            <head>
+              <title>Ampliar Gráfico</title>
+              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            </head>
+            <body>
+              <canvas id="ampliado" width="800" height="600"></canvas>
+              <script>
+                const ctx = document.getElementById('ampliado').getContext('2d');
+                new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                    labels: \${JSON.stringify(labels)},
+                    datasets: [{
+                      label: '\${variableX}',
+                      data: \${JSON.stringify(ejeX)},
+                      borderColor: '\${coloresLinea[index]}',
+                      borderWidth: 2,
+                      fill: false,
+                      tension: 0.3,
+                      pointRadius: 2
+                    }]
+                  },
+                  options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: {
+                      y: { title: { display: true, text: '\${columnas[1]}' } },
+                      x: { title: { display: true, text: '\${variableX}' } }
+                    }
                   }
-                }
-              });
-            <\/script></body></html>
+                });
+              <\/script>
+            </body>
+            </html>
           \`);
           nueva.document.close();
         }
-      </script>
+
+        [1,3,6].forEach((colIndex, i) => {
+          document.getElementById(selectIds[i]).value = columnas[colIndex];
+          actualizarGrafico(i);
+        });
+      <\/script>
     </body>
     </html>
-  `;
-
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
+  `);
+  nuevaVentana.document.close();
 }
 
 
