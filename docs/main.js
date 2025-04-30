@@ -211,6 +211,17 @@ function mostrarPerfilCTD(id) {
         </div>
       `).join('')}
     </div>
+        <table border="1" style="margin-top:20px; border-collapse: collapse; width: 100%;">
+      <thead>
+        <tr>${columnas.map(col => `<th>${col}</th>`).join('')}</tr>
+      </thead>
+      <tbody>
+        ${datos.map(fila => `
+          <tr>${columnas.map(col => `<td>${fila[col]}</td>`).join('')}</tr>
+        `).join('')}
+      </tbody>
+    </table>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
   `;
 
